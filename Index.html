@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>BOY Juice - Ultra Fast POS</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box !important; }
+    :root { --primary: #2ecc71; --bg: #f2f2f7; --danger: #ff3b30; }
+    html, body { overflow-x: hidden; max-width: 100%; touch-action: pan-y; }
+    body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 10px; padding-bottom: 120px; }
+    
+    .card { background: white; padding: 15px; border-radius: 18px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 12px; width: 100%; position: relative; }
+    h3 { margin: 0 0 10px 0; font-size: 1rem; color: #333; border-left: 4px solid var(--primary); padding-left: 8px; }
+    
+    input { border: 1px solid #ccc; padding: 12px; border-radius: 10px; font-size: 16px; width: 100%; outline: none; background: white; }
+    input:focus { border-color: var(--primary); background: #f9fffb; }
+    input::placeholder { color: #d1d1d1; font-weight: normal; }
+    
+    #mainDate { display: block; width: 100% !important; max-width: 100% !important; text-align: center; font-weight: bold; color: var(--primary); border: 1px solid #ccc; padding: 12px; border-radius: 10px; -webkit-appearance: none; appearance: none; background: white; }
+    
+    .settings-btn { position: absolute; top: 15px; right: 15px; font-size: 24px; cursor: pointer; z-index: 100; transition: transform 0.3s; }
+    .settings-btn:active { transform: rotate(90deg); }
+    
+    .locked-date-btn { display: block; width: 100% !important; box-sizing: border-box !important; margin: 0 auto 15px auto !important; text-align: center; font-weight: bold; font-size: 1.1rem; color: white; background: var(--primary); border: none; border-radius: 12px; padding: 15px; box-shadow: 0 4px 10px rgba(46, 204, 113, 0.2); }
+    .locked-date-btn::-webkit-calendar-picker-indicator { filter: invert(1); }
+    
+    .btn-inc { border: 1px solid #ddd; background: #fff; padding: 10px 0; border-radius: 12px; font-weight: bold; width: 100%; font-size: 0.85rem; transition: 0.2s; }
+    .btn-inc.active { background: #e8f5e9; border: 2px solid var(--primary); color: var(--primary); }
+    .input-group { display: flex; gap: 8px; margin-top: 10px; background: #f9f9f9; padding: 10px; border-radius: 12px; align-items: center; border: 1px solid #eee; }
+    .hidden { display: none !important; }
+    
+    .swipe-wrapper { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; margin-bottom: 8px; scroll-behavior: smooth; }
+    .swipe-wrapper::-webkit-scrollbar { display: none; }
+    .exp-row { min-width: 100%; scroll-snap-align: start; display: grid; grid-template-columns: 2.5fr 1fr 1fr 1.2fr; gap: 5px; }
+    .delete-action { min-width: 75px; margin-left: 8px; background: var(--danger); color: white; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.9rem; scroll-snap-align: end; cursor: pointer; }
+    
+    .btn-main { width: 100%; padding: 15px; border-radius: 14px; font-size: 1rem; font-weight: bold; border: none; margin-top: 10px; cursor: pointer; }
+    .btn-submit { background: var(--primary); color: white; position: fixed; bottom: 35px; left: 10px; right: 10px; width: calc(100% - 20px); box-shadow: 0 4px 15px rgba(0,0,0,0.2); z-index: 999; }
+    
+    .autocomplete-items { position: absolute; z-index: 10005 !important; background-color: #fff; border: 1px solid #ccc; border-radius: 12px; max-height: 250px; overflow-y: auto; box-shadow: 0 8px 24px rgba(0,0,0,0.2); }
+    .autocomplete-items div { padding: 14px; cursor: pointer; border-bottom: 1px solid #eee; font-size: 16px; color: #333; }
+    .autocomplete-items div:active { background-color: #e8f5e9; }
+    
+    .full-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 10000; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
+    .overlay-card { background: white; width: 85%; padding: 30px; border-radius: 25px; text-align: center; color: #333; box-sizing: border-box; }
+    
+    #loadingOverlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: transparent; z-index: 99999; display: flex; align-items: center; justify-content: center; pointer-events: none; }
+    .fruit-loader { font-size: 70px; animation: breathe 1.2s infinite ease-in-out alternate; text-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+    @keyframes breathe { 0% { transform: scale(0.85); opacity: 0.7; } 100% { transform: scale(1.15); opacity: 1; } }
+  </style>
+</head>
+<body>
+
+  <div class="card" style="z-index: 950;">
+    <div class="settings-btn" onclick="toggleSettings()">⚙️</div>
+    <h3>📅 วันที่</h3>
+    <input type="date" id="mainDate" onchange="loadData()">
+  </div>
+
+  <div id="formArea" style="position: relative;">
+    <div class="card">
+      <h3>💰 รายรับ</h3>
+      <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px;">
+        <button id="btn-cash" class="btn-inc" onclick="toggleInput('cash')">💵 เงินสด</button>
+        <button id="btn-transfer" class="btn-inc" onclick="toggleInput('transfer')">📱 โอน</button>
+        <button id="btn-grab" class="btn-inc" onclick="toggleInput('grab')">🛵 Grab</button>
+      </div>
+      <div id="group-cash" class="input-group hidden">💵 <input type="number" inputmode="decimal" id="val-cash" placeholder="ระบุยอดเงินสด" onchange="doSync()"></div>
+      <div id="group-transfer" class="input-group hidden">📱 <input type="number" inputmode="decimal" id="val-transfer" placeholder="ระบุยอดโอน" onchange="doSync()"></div>
+      <div id="group-grab" class="input-group hidden">🛵 <input type="number" inputmode="decimal" id="val-grab" placeholder="ระบุยอด Grab" onchange="doSync()"></div>
+      
+      <div style="display:grid; grid-template-columns: 2fr 1fr; gap:8px; margin-top:10px;">
+        <input type="text" id="otherIncomeNote" placeholder="รายได้อื่น (ระบุ)" onchange="doSync()">
+        <input type="number" inputmode="decimal" id="otherIncomeVal" placeholder="บาท" onchange="doSync()">
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>💸 รายจ่าย</h3>
+      <div id="expenseList"></div>
+      <button class="btn-main" style="background: none; border: 1px dashed #aaa; color: #666;" onclick="addRow()">+ เพิ่มบรรทัด</button>
+      <button class="btn-main" style="background: #fff; border: 1px solid #ddd; color: var(--danger); margin-top: 5px;" onclick="clearAllData()">🗑️ ล้างข้อมูลทั้งหมด</button>
+    </div>
+  </div>
+
+  <button class="btn-main btn-submit" id="btnSubmit" onclick="submitToSheet()">🚀 ส่งยอดสรุปเข้าชีทหลัก</button>
+
+  <div id="settingsOverlay" class="full-overlay hidden">
+    <div class="overlay-card">
+      <h2 style="margin-top:0;">⚙️ ตั้งค่าระบบ</h2>
+      <p style="color:#666; font-size:0.9rem; margin-bottom:20px;">จัดการฐานข้อมูลรายการสินค้า</p>
+      <button onclick="pushSync()" style="width:100%; padding:15px; border-radius:15px; border:1px solid var(--primary); background:#ebfaf0; color:var(--primary); font-weight:bold; margin-bottom:12px;">
+        🔄 อัปเดตรายการสินค้า
+      </button>
+      <button onclick="toggleSettings()" style="width:100%; padding:12px; border:none; background:#eee; border-radius:12px; font-weight:bold; color:#666;">
+        ปิดหน้าต่าง
+      </button>
+    </div>
+  </div>
+
+  <div id="lockedOverlay" class="full-overlay hidden">
+    <div class="overlay-card">
+      <div style="font-size: 60px; margin-bottom: 5px;">✅</div>
+      <h2 style="margin: 0 0 5px 0; color: var(--primary);">ส่งข้อมูลแล้ว</h2>
+      <p style="color: #666; margin: 0 0 20px 0; font-size: 0.95rem;">เลือกวันที่เพื่อทำรายการอื่น</p>
+      <input type="date" id="lockedDate" class="locked-date-btn" onchange="syncDateFromLock()">
+      <button onclick="unlockEditMode()" style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #ddd; background: #f8f8f8; color: #666; font-size: 1rem; font-weight: bold; cursor: pointer;">
+        ✏️ แก้ไขข้อมูลของวันนี้
+      </button>
+    </div>
+  </div>
+
+  <div id="successOverlay" class="full-overlay hidden">
+    <div class="overlay-card">
+      <div style="font-size: 60px; margin-bottom: 10px;">✅</div>
+      <h2 style="margin: 0; color: var(--primary);">ส่งข้อมูลสำเร็จ!</h2>
+      <p style="color: #666; margin: 15px 0 25px 0;">ระบบอัปเดตยอดใน Google Sheets <br>ของวันที่ <strong id="displayDateText" style="color: #333;"></strong> เรียบร้อย</p>
+      <button onclick="goToNextDay()" style="width: 100%; padding: 15px; border-radius: 12px; border: none; background: var(--primary); color: white; font-weight: bold; font-size: 1.1rem; margin-bottom: 10px;">
+        📅 ทำรายการวันถัดไป
+      </button>
+      <button onclick="unlockScreen()" style="width: 100%; padding: 12px; border-radius: 12px; border: 1px solid #ddd; background: #f8f8f8; color: #666; font-size: 0.9rem; font-weight: bold;">
+        ↩️ กลับไปแก้ไขข้อมูล
+      </button>
+    </div>
+  </div>
+
+  <div id="loadingOverlay" class="hidden">
+    <div class="fruit-loader" id="fruitIcon">🍉</div>
+  </div>
+
+  <script>
+    // 🚨 🚨 เอา URL ของ Web App ที่ Copy มาวางตรงนี้ได้เลยครับ! 🚨 🚨
+    const WEB_APP_URL = "วางลิงก์ที่ก๊อปมาตรงนี้ครับ_ต้องมีเครื่องหมายคำพูดด้วยนะ";
+
+    var timer;
+    var appStarted = false;
+    var itemDict = {}; 
+
+    // --- ระบบเชื่อมต่อ API หลัก (ทดแทน google.script.run) ---
+    async function apiCall(action, data = {}) {
+      try {
+        const response = await fetch(WEB_APP_URL, {
+          method: 'POST',
+          body: JSON.stringify({ action: action, ...data })
+        });
+        return await response.json();
+      } catch (err) {
+        console.error("API Error:", err);
+        throw err;
+      }
+    }
+
+    function toggleSettings() {
+      document.getElementById('settingsOverlay').classList.toggle('hidden');
+    }
+
+    async function pushSync() {
+      if(!confirm("ต้องการซิงค์ข้อมูลใหม่จากไฟล์ Database ใช่ไหม?")) return;
+      document.getElementById('loadingOverlay').classList.remove('hidden');
+      try {
+        const res = await apiCall('syncCloud');
+        if (res.status && res.status.indexOf("Error") > -1) {
+          alert(res.status);
+        } else {
+          alert("✅ อัปเดตข้อมูลเข้า Cloud สำเร็จ!");
+          await pullItems();
+        }
+      } catch (e) {
+        alert("❌ ซิงค์ไม่สำเร็จ กรุณาตรวจสอบอินเทอร์เน็ต");
+      }
+      document.getElementById('loadingOverlay').classList.add('hidden');
+    }
+
+    async function pullItems() {
+      try {
+        const rawData = await apiCall('pullItems');
+        if (rawData) {
+          var formattedDict = {};
+          if (Array.isArray(rawData)) {
+            rawData.forEach(function(item) { formattedDict[item.n] = item.u; });
+          } else { formattedDict = rawData; }
+          localStorage.setItem('BOY_JUICE_ITEMS', JSON.stringify(formattedDict));
+          itemDict = formattedDict;
+        }
+      } catch(e) { console.log("Pull Items Error", e); }
+    }
+
+    function initApp() {
+      if (appStarted) return;
+      appStarted = true;
+      var savedItems = localStorage.getItem('BOY_JUICE_ITEMS');
+      if (savedItems) { itemDict = JSON.parse(savedItems); } 
+      else { pullItems(); }
+
+      var today = new Date();
+      var yyyy = today.getFullYear();
+      var mm = String(today.getMonth() + 1).padStart(2, '0');
+      var dd = String(today.getDate()).padStart(2, '0');
+      document.getElementById('mainDate').value = yyyy + "-" + mm + "-" + dd;
+      loadData();
+    }
+
+    function toggleInput(type) {
+      var el = document.getElementById('group-' + type);
+      var btn = document.getElementById('btn-' + type);
+      var input = document.getElementById('val-' + type);
+      el.classList.toggle('hidden');
+      btn.classList.toggle('active');
+      if(!el.classList.contains('hidden')) {
+        input.focus();
+        setTimeout(function() { input.click(); input.focus(); }, 50);
+      }
+      doSync();
+    }
+
+    function showSuggestions(inp) {
+      var val = inp.value.trim();
+      closeAllLists();
+      
+      var a = document.createElement("DIV");
+      a.setAttribute("class", "autocomplete-items");
+      var rect = inp.getBoundingClientRect();
+      a.style.top = (rect.bottom + window.scrollY) + "px";
+      a.style.left = (rect.left + window.scrollX) + "px";
+      a.style.width = rect.width + "px";
+      document.body.appendChild(a); 
+      
+      var count = 0;
+      for (var key in itemDict) {
+        if (!val || key.toLowerCase().indexOf(val.toLowerCase()) > -1) {
+          var b = document.createElement("DIV");
+          if (val) {
+            var matchIdx = key.toLowerCase().indexOf(val.toLowerCase());
+            b.innerHTML = key.substring(0, matchIdx) + "<strong><span style='color: #2ecc71;'>" + key.substring(matchIdx, matchIdx + val.length) + "</span></strong>" + key.substring(matchIdx + val.length);
+          } else {
+            b.innerHTML = key; 
+          }
+          
+          b.innerHTML += "<input type='hidden' value='" + key + "'>";
+          b.addEventListener("click", function(e) {
+            inp.value = this.getElementsByTagName("input")[0].value;
+            closeAllLists();
+            checkAutoFill(inp);
+            var row = inp.closest('.exp-row');
+            var qInput = row.querySelector('.q');
+            if(qInput) qInput.focus();
+          });
+          a.appendChild(b);
+          if(++count > 15) break; 
+        }
+      }
+      if(count === 0) closeAllLists();
+    }
+
+    function closeAllLists(elmnt) {
+      var x = document.getElementsByClassName("autocomplete-items");
+      for (var i = 0; i < x.length; i++) { if (elmnt != x[i]) { x[i].parentNode.removeChild(x[i]); } }
+    }
+
+    document.addEventListener("click", function (e) { if(!e.target.classList.contains('i')) { closeAllLists(); } });
+
+    function checkAutoFill(inputEl) {
+      var val = inputEl.value.trim();
+      if (itemDict[val]) { 
+        var row = inputEl.closest('.exp-row');
+        var unitInput = row.querySelector('.u');
+        if (!unitInput.value) { unitInput.value = itemDict[val]; }
+      }
+      doSync(); 
+    }
+
+    function addRow(i, q, u, p) {
+      if(!i) i = ''; if(!q) q = ''; if(!u) u = ''; if(!p) p = '';
+      var wrapper = document.createElement('div');
+      wrapper.className = 'swipe-wrapper';
+      wrapper.innerHTML = 
+        '<div class="exp-row">' +
+          '<input type="text" class="i" placeholder="รายการ" value="'+i+'" oninput="showSuggestions(this)" onclick="showSuggestions(this)" onchange="checkAutoFill(this)" onkeydown="nav(event, 0)" autocomplete="off">' +
+          '<input type="text" class="q" placeholder="จำนวน" value="'+q+'" onchange="doSync()" onkeydown="nav(event, 1)">' +
+          '<input type="text" class="u" placeholder="หน่วย" value="'+u+'" onchange="doSync()" onkeydown="nav(event, 2)">' +
+          '<input type="text" class="p" placeholder="บาท" value="'+p+'" onchange="doSync()" onkeydown="nav(event, 3)">' +
+        '</div>' +
+        '<div class="delete-action" onclick="removeRow(this)">ลบ</div>';
+      document.getElementById('expenseList').appendChild(wrapper);
+      return wrapper;
+    }
+
+    function removeRow(btn) { btn.parentElement.remove(); doSync(); }
+
+    function clearAllData() {
+      if(confirm("❗ ต้องการล้างข้อมูลทั้งหมด?")) {
+        document.getElementById('expenseList').innerHTML = '';
+        document.getElementById('val-cash').value = '';
+        document.getElementById('val-transfer').value = '';
+        document.getElementById('val-grab').value = '';
+        document.getElementById('otherIncomeVal').value = '';
+        document.getElementById('otherIncomeNote').value = '';
+        for(var i=0; i<4; i++) addRow();
+        doSync();
+      }
+    }
+
+    function syncDateFromLock() {
+      var lDate = document.getElementById('lockedDate').value;
+      if(lDate) {
+        document.getElementById('mainDate').value = lDate;
+        document.getElementById('lockedOverlay').classList.add('hidden');
+        loadData();
+      }
+    }
+
+    async function submitToSheet() {
+      var date = document.getElementById('mainDate').value;
+      if(!date) return alert("กรุณาระบุวันที่");
+      document.getElementById('loadingOverlay').classList.remove('hidden');
+      var exp = [];
+      var wrappers = document.querySelectorAll('.swipe-wrapper');
+      for(var w=0; w<wrappers.length; w++) {
+        var ins = wrappers[w].querySelectorAll('.exp-row input:not([type="hidden"])');
+        if (ins[0].value || ins[1].value || ins[2].value || ins[3].value) {
+          exp.push({ i: ins[0].value, q: ins[1].value, u: ins[2].value, p: ins[3].value });
+        }
+      }
+      var data = {
+        cash: { v: document.getElementById('val-cash').value, s: !document.getElementById('group-cash').classList.contains('hidden') },
+        transfer: { v: document.getElementById('val-transfer').value, s: !document.getElementById('group-transfer').classList.contains('hidden') },
+        grab: { v: document.getElementById('val-grab').value, s: !document.getElementById('group-grab').classList.contains('hidden') },
+        other: { v: document.getElementById('otherIncomeVal').value, n: document.getElementById('otherIncomeNote').value },
+        exp: exp
+      };
+      
+      try {
+        const res = await apiCall('submit', { date: date, data: data });
+        document.getElementById('loadingOverlay').classList.add('hidden');
+        if(res.status === "Success") {
+          const dObj = new Date(date);
+          const thMonths = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
+          document.getElementById('displayDateText').innerText = `${dObj.getDate()} ${thMonths[dObj.getMonth()]} ${dObj.getFullYear().toString().slice(-2)}`;
+          document.getElementById('successOverlay').classList.remove('hidden');
+        } else { alert("แจ้งเตือนจากระบบ: " + res.status); }
+      } catch (err) {
+        document.getElementById('loadingOverlay').classList.add('hidden');
+        alert("❌ ส่งไม่สำเร็จ: กรุณาตรวจสอบอินเทอร์เน็ต"); 
+      }
+    }
+
+    function goToNextDay() {
+      var dateInput = document.getElementById('mainDate');
+      var d = new Date(dateInput.value);
+      d.setDate(d.getDate() + 1);
+      var yyyy = d.getFullYear();
+      var mm = String(d.getMonth() + 1).padStart(2, '0');
+      var dd = String(d.getDate()).padStart(2, '0');
+      dateInput.value = yyyy + "-" + mm + "-" + dd;
+      document.getElementById('successOverlay').classList.add('hidden');
+      loadData();
+    }
+
+    function unlockScreen() { document.getElementById('successOverlay').classList.add('hidden'); unlockEditMode(); }
+    
+    async function unlockEditMode() {
+      document.getElementById('lockedOverlay').classList.add('hidden');
+      document.getElementById('btnSubmit').style.display = 'block';
+      var date = document.getElementById('mainDate').value;
+      await apiCall('unlockDate', { date: date });
+    }
+
+    function nav(e, idx) {
+      if (e.keyCode === 13) {
+        e.preventDefault();
+        closeAllLists();
+        var currentRow = e.target.closest('.exp-row'); 
+        var currentWrapper = currentRow.parentElement; 
+        var inputs = currentRow.querySelectorAll('input:not([type="hidden"])');
+        if (idx < 3) { inputs[idx+1].focus(); } 
+        else {
+          var nextWrapper = currentWrapper.nextElementSibling;
+          if (nextWrapper && nextWrapper.classList.contains('swipe-wrapper')) { nextWrapper.querySelector('.i').focus(); } 
+          else { addRow().querySelector('.i').focus(); }
+        }
+      }
+    }
+
+    function doSync() {
+      clearTimeout(timer);
+      timer = setTimeout(async function() {
+        var date = document.getElementById('mainDate').value;
+        if(!date) return;
+        var exp = [];
+        var wrappers = document.querySelectorAll('.swipe-wrapper');
+        for(var w=0; w<wrappers.length; w++) {
+          var ins = wrappers[w].querySelectorAll('.exp-row input:not([type="hidden"])');
+          if (ins[0].value || ins[1].value || ins[2].value || ins[3].value) {
+            exp.push({ i: ins[0].value, q: ins[1].value, u: ins[2].value, p: ins[3].value });
+          }
+        }
+        var data = {
+          cash: { v: document.getElementById('val-cash').value, s: !document.getElementById('group-cash').classList.contains('hidden') },
+          transfer: { v: document.getElementById('val-transfer').value, s: !document.getElementById('group-transfer').classList.contains('hidden') },
+          grab: { v: document.getElementById('val-grab').value, s: !document.getElementById('group-grab').classList.contains('hidden') },
+          other: { v: document.getElementById('otherIncomeVal').value, n: document.getElementById('otherIncomeNote').value },
+          exp: exp
+        };
+        apiCall('autoSave', { date: date, data: data });
+      }, 500);
+    }
+
+    async function loadData() {
+      var date = document.getElementById('mainDate').value;
+      if(!date) return;
+      var fruits = ['🍉', '🍍', '🍓', '🍊', '🍇', '🥑'];
+      document.getElementById('fruitIcon').innerText = fruits[Math.floor(Math.random() * fruits.length)];
+      document.getElementById('loadingOverlay').classList.remove('hidden');
+      
+      try {
+        const parsed = await apiCall('loadData', { date: date });
+        var d = {}; try { d = JSON.parse(parsed.draft || '{}'); } catch(e) {}
+        document.getElementById('expenseList').innerHTML = '';
+        var btns = document.querySelectorAll('.btn-inc');
+        for(var b=0; b<btns.length; b++) btns[b].classList.remove('active');
+        var grps = document.querySelectorAll('.input-group');
+        for(var g=0; g<grps.length; g++) grps[g].classList.add('hidden');
+        document.getElementById('otherIncomeVal').value = '';
+        document.getElementById('otherIncomeNote').value = '';
+        
+        if (d.cash) {
+          if (d.cash.s) { document.getElementById('group-cash').classList.remove('hidden'); document.getElementById('btn-cash').classList.add('active'); }
+          document.getElementById('val-cash').value = d.cash.v || '';
+        }
+        if (d.transfer) {
+          if (d.transfer.s) { document.getElementById('group-transfer').classList.remove('hidden'); document.getElementById('btn-transfer').classList.add('active'); }
+          document.getElementById('val-transfer').value = d.transfer.v || '';
+        }
+        if (d.grab) {
+          if (d.grab.s) { document.getElementById('group-grab').classList.remove('hidden'); document.getElementById('btn-grab').classList.add('active'); }
+          document.getElementById('val-grab').value = d.grab.v || '';
+        }
+        if (d.other) {
+          document.getElementById('otherIncomeVal').value = d.other.v || '';
+          document.getElementById('otherIncomeNote').value = d.other.n || '';
+        }
+        if (d.exp && d.exp.length > 0) {
+          for(var r=0; r<d.exp.length; r++) { addRow(d.exp[r].i, d.exp[r].q, d.exp[r].u, d.exp[r].p); }
+          addRow(); 
+        } else { for(var i=0; i<4; i++) addRow(); }
+        
+        if (parsed.submitted) {
+          document.getElementById('lockedDate').value = date; 
+          document.getElementById('lockedOverlay').classList.remove('hidden');
+          document.getElementById('btnSubmit').style.display = 'none';
+        } else {
+          document.getElementById('lockedOverlay').classList.add('hidden');
+          document.getElementById('btnSubmit').style.display = 'block';
+        }
+        document.getElementById('loadingOverlay').classList.add('hidden');
+      } catch (err) {
+        document.getElementById('loadingOverlay').classList.add('hidden');
+        alert("❌ ดึงข้อมูลไม่สำเร็จ: กรุณาตรวจสอบอินเทอร์เน็ต"); 
+      }
+    }
+    
+    document.addEventListener("DOMContentLoaded", initApp);
+    window.onload = initApp;
+    setTimeout(initApp, 300);
+  </script>
+</body>
+</html>

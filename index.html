@@ -141,6 +141,8 @@
       try {
         const response = await fetch(WEB_APP_URL, {
           method: 'POST',
+          // 🚨 เพิ่มบรรทัด headers ด้านล่างนี้เข้าไป เพื่อปลดล็อกการบล็อกของ Google ครับ
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify({ action: action, ...data })
         });
         return await response.json();

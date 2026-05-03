@@ -45,7 +45,6 @@
     .full-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 10000; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
     .overlay-card { background: white; width: 90%; max-height: 90vh; overflow-y: auto; padding: 25px; border-radius: 25px; text-align: center; color: #333; box-sizing: border-box; }
     
-    /* สไตล์ตาราง Dashboard */
     table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 15px; margin-bottom: 15px; text-align: left;}
     th { background: #f2f2f7; padding: 10px 5px; border-bottom: 2px solid #ddd; }
     td { padding: 10px 5px; border-bottom: 1px solid #eee; }
@@ -53,6 +52,12 @@
     #loadingOverlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: transparent; z-index: 99999; display: flex; align-items: center; justify-content: center; pointer-events: none; }
     .fruit-loader { font-size: 70px; animation: breathe 1.2s infinite ease-in-out alternate; text-shadow: 0 4px 10px rgba(0,0,0,0.2); }
     @keyframes breathe { 0% { transform: scale(0.85); opacity: 0.7; } 100% { transform: scale(1.15); opacity: 1; } }
+
+    /* สไตล์สำหรับกล่องบันทึกการลา */
+    .leave-box { border: 1px solid #eee; padding: 12px; border-radius: 12px; margin-bottom: 10px; background: #fafafa; }
+    .radio-group { display: flex; align-items: center; gap: 15px; margin-top: 8px; font-size: 15px; }
+    .radio-group label { display: flex; align-items: center; gap: 5px; cursor: pointer; color: #333; }
+    .radio-group input[type="radio"] { width: 20px; height: 20px; accent-color: var(--primary); }
   </style>
 </head>
 <body>
@@ -67,12 +72,10 @@
     <div class="card">
       <h3>💰 รายรับ</h3>
       <div class="input-group">
-        <span>💵</span>
-        <input type="number" inputmode="decimal" id="val-cash" placeholder="ระบุยอดเงินสด" onchange="doSync()">
+        <span>💵</span><input type="number" inputmode="decimal" id="val-cash" placeholder="ระบุยอดเงินสด" onchange="doSync()">
       </div>
       <div class="input-group">
-        <span>📱</span>
-        <input type="number" inputmode="decimal" id="val-transfer" placeholder="ระบุยอดโอน" onchange="doSync()">
+        <span>📱</span><input type="number" inputmode="decimal" id="val-transfer" placeholder="ระบุยอดโอน" onchange="doSync()">
       </div>
       <div style="display:grid; grid-template-columns: 2fr 1fr; gap:8px; margin-top:5px;">
         <input type="text" id="otherIncomeNote" placeholder="รายได้อื่น (ระบุ)" onchange="doSync()">
@@ -81,27 +84,19 @@
     </div>
 
     <div class="card">
-      <h3>🏖️ บันทึกการลาพนักงาน</h3>
-      <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 8px; margin-bottom: 8px; position: relative;">
-        <input type="text" id="hrName" placeholder="ชื่อพนักงาน" oninput="showStaffSuggestions(this)" autocomplete="off">
-        <select id="hrType" onchange="toggleHrHours()">
-          <option value="Full Day">ลาเต็มวัน</option>
-          <option value="Hourly">ลารายชั่วโมง</option>
-        </select>
-      </div>
-      <div id="hrHoursWrapper" class="hidden" style="margin-bottom: 8px;">
-        <input type="number" id="hrHours" inputmode="decimal" placeholder="ระบุจำนวนชั่วโมงที่ลา">
-      </div>
-      <button class="btn-main" style="background: #e8f5e9; color: var(--primary); border: 1px solid var(--primary); margin-top: 5px; padding: 10px;" onclick="saveLeave()">
-        📌 บันทึกข้อมูลการลา
-      </button>
+      <h3>💸 รายจ่าย</h3>
+      <div id="expenseList"></div>
+      <button class="btn-main" style="background: none; border: 1px dashed #aaa; color: #666;" onclick="addRow()">+ เพิ่มบรรทัดรายจ่าย</button>
+      <button class="btn-main" style="background: #fff; border: 1px solid #ddd; color: var(--danger); margin-top: 5px;" onclick="clearAllData()">🗑️ ล้างข้อมูลทั้งหมด</button>
     </div>
 
     <div class="card">
-      <h3>💸 รายจ่าย</h3>
-      <div id="expenseList"></div>
-      <button class="btn-main" style="background: none; border: 1px dashed #aaa; color: #666;" onclick="addRow()">+ เพิ่มบรรทัด</button>
-      <button class="btn-main" style="background: #fff; border: 1px solid #ddd; color: var(--danger); margin-top: 5px;" onclick="clearAllData()">🗑️ ล้างข้อมูลทั้งหมด</button>
+      <h3>🏖️ บันทึกการลาพนักงาน</h3>
+      <div id="leaveList"></div>
+      <button class="btn-main" style="background: none; border: 1px dashed #007aff; color: #007aff;" onclick="addLeaveRow()">+ เพิ่มบรรทัดการลา</button>
+      <button class="btn-main" style="background: #e8f5e9; color: var(--primary); border: 1px solid var(--primary); margin-top: 10px; padding: 15px;" onclick="saveMultipleLeaves()">
+        📌 บันทึกข้อมูลการลา
+      </button>
     </div>
   </div>
 
@@ -111,7 +106,6 @@
   <div id="settingsOverlay" class="full-overlay hidden">
     <div class="overlay-card">
       <h2 style="margin-top:0;">⚙️ ตั้งค่าระบบ</h2>
-      
       <h3 style="text-align: left; margin-top: 20px;">👥 จัดการรายชื่อพนักงาน</h3>
       <textarea id="staffListInput" style="width:100%; height:80px; padding:10px; border-radius:10px; border:1px solid #ccc; font-family:inherit;" placeholder="ปู, นัน, สั้น, หยก..."></textarea>
       <button onclick="saveStaffList()" style="width:100%; padding:10px; border-radius:10px; border:none; background:#007aff; color:white; font-weight:bold; margin-bottom:20px; margin-top: 5px;">
@@ -181,14 +175,15 @@
   </div>
 
   <script>
-    // 🚨 🚨 ลิงก์ใหม่ใส่ไว้ให้เรียบร้อยแล้วครับ 🚨 🚨
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwLNcIbQzC30EhRAQQM2e7_WQysgepfPnyadJ6D5T5wE_eMhGPU9JKl_teDfPu7he6Z/exec";
+    // 🚨 🚨 วาง URL ที่ได้จากการ Deploy รอบล่าสุด ตรงนี้ครับ 🚨 🚨
+    const WEB_APP_URL = "วางลิงก์ที่นี่ครับ";
 
     var timer;
     var appStarted = false;
     var itemDict = {}; 
-    var staffList = ["ปู", "นัน", "สั้น", "หยก", "หน่อย", "ปา", "โดนัท"]; // ค่าเริ่มต้น
+    var staffList = ["ปู", "นัน", "สั้น", "หยก", "หน่อย", "ปา", "โดนัท"]; 
     var currentSalaryData = [];
+    var leaveRowCounter = 0; // ตัวนับบรรทัดของกล่องการลา
 
     // --- ระบบเชื่อมต่อ API ---
     async function apiCall(action, data = {}) {
@@ -199,27 +194,61 @@
           body: JSON.stringify({ action: action, ...data })
         });
         const textResponse = await response.text(); 
-        try {
-          return JSON.parse(textResponse);
-        } catch (parseErr) {
-          throw new Error("หลังบ้านตอบกลับผิดปกติ (เช็กสิทธิ์ตอน Deploy)");
-        }
-      } catch (err) { 
-        console.error("API Error:", err); 
-        throw err; 
-      }
+        try { return JSON.parse(textResponse); } catch (parseErr) { throw new Error("หลังบ้านตอบกลับผิดปกติ"); }
+      } catch (err) { console.error("API Error:", err); throw err; }
     }
 
-    function toggleSettings() {
-      document.getElementById('settingsOverlay').classList.toggle('hidden');
-    }
+    function toggleSettings() { document.getElementById('settingsOverlay').classList.toggle('hidden'); }
 
-    // --- ระบบจัดการพนักงาน (HR) ---
+    // ==========================================
+    // 🏖️ ระบบจัดการการลา (ใหม่)
+    // ==========================================
     function saveStaffList() {
       const val = document.getElementById('staffListInput').value;
       staffList = val.split(',').map(s => s.trim()).filter(s => s !== '');
       localStorage.setItem('BOY_STAFF', JSON.stringify(staffList));
       alert("✅ บันทึกรายชื่อพนักงานเรียบร้อย");
+    }
+
+    function clearLeaveList() {
+      document.getElementById('leaveList').innerHTML = '';
+      addLeaveRow(); // แปะบรรทัดแรกไว้ให้เลย
+    }
+
+    function addLeaveRow() {
+      leaveRowCounter++;
+      const wrapper = document.createElement('div');
+      wrapper.className = 'leave-box';
+      wrapper.innerHTML = `
+        <div style="display: flex; gap: 8px; align-items: center; position: relative;">
+          <input type="text" class="hr-name" placeholder="ชื่อพนักงาน" oninput="showStaffSuggestions(this)" autocomplete="off" style="flex: 1;">
+          <button onclick="this.parentElement.parentElement.remove()" style="background: var(--danger); color: white; border: none; padding: 12px; border-radius: 10px; font-weight: bold;">ลบ</button>
+        </div>
+        <div class="radio-group">
+          <label>
+            <input type="radio" name="leaveType_${leaveRowCounter}" value="Full Day" checked onchange="toggleLeaveHours(this)">
+            ลาเต็มวัน
+          </label>
+          <label>
+            <input type="radio" name="leaveType_${leaveRowCounter}" value="Hourly" onchange="toggleLeaveHours(this)">
+            รายชั่วโมง
+          </label>
+          <input type="number" class="hr-hours hidden" placeholder="ชม." style="width: 70px; padding: 8px; margin-left: auto;">
+        </div>
+      `;
+      document.getElementById('leaveList').appendChild(wrapper);
+    }
+
+    function toggleLeaveHours(radioBtn) {
+      const row = radioBtn.closest('.leave-box');
+      const hrInput = row.querySelector('.hr-hours');
+      if(radioBtn.value === 'Hourly') {
+        hrInput.classList.remove('hidden');
+        setTimeout(() => hrInput.focus(), 50);
+      } else {
+        hrInput.classList.add('hidden');
+        hrInput.value = '';
+      }
     }
 
     function showStaffSuggestions(inp) {
@@ -252,37 +281,42 @@
       }
     }
 
-    function toggleHrHours() {
-      var type = document.getElementById('hrType').value;
-      if(type === 'Hourly') {
-        document.getElementById('hrHoursWrapper').classList.remove('hidden');
-      } else {
-        document.getElementById('hrHoursWrapper').classList.add('hidden');
-        document.getElementById('hrHours').value = '';
-      }
-    }
-
-    async function saveLeave() {
+    async function saveMultipleLeaves() {
       var date = document.getElementById('mainDate').value;
-      var name = document.getElementById('hrName').value.trim();
-      var type = document.getElementById('hrType').value;
-      var hours = document.getElementById('hrHours').value || 0;
-      
-      if (!name) return alert("กรุณาใส่ชื่อพนักงานด้วยครับ");
-      if (type === 'Hourly' && hours <= 0) return alert("กรุณาระบุจำนวนชั่วโมงที่ลา");
+      if (!date) return alert("กรุณาเลือกวันที่ด้านบนก่อนครับ");
+
+      var rows = document.getElementById('leaveList').children;
+      var leavesToSave = [];
+
+      for(let i=0; i<rows.length; i++) {
+        let name = rows[i].querySelector('.hr-name').value.trim();
+        let type = rows[i].querySelector('input[type="radio"]:checked').value;
+        let hours = rows[i].querySelector('.hr-hours').value || 0;
+        
+        if (name) {
+          if (type === 'Hourly' && hours <= 0) {
+            return alert("ระบุจำนวนชั่วโมงที่ลาให้ครบถ้วนด้วยครับ (สำหรับคนที่เลือกลารายชั่วโมง)");
+          }
+          leavesToSave.push({ name: name, type: type, hours: hours });
+        }
+      }
+
+      if (leavesToSave.length === 0) return alert("ไม่มีข้อมูลให้บันทึก (กรุณาใส่ชื่อพนักงานอย่างน้อย 1 คน)");
 
       document.getElementById('loadingOverlay').classList.remove('hidden');
       try {
-        await apiCall('saveLeave', { date: date, staffName: name, type: type, hours: hours });
-        alert("✅ บันทึกการลาของ " + name + " เรียบร้อยแล้ว");
-        document.getElementById('hrName').value = '';
-        document.getElementById('hrHours').value = '';
+        await apiCall('saveMultipleLeaves', { date: date, leaves: leavesToSave });
+        alert(`✅ บันทึกการลา ${leavesToSave.length} รายการ เรียบร้อยแล้ว`);
+        clearLeaveList(); // บันทึกเสร็จให้ล้างช่องทิ้ง ป้องกันส่งซ้ำ
       } catch (e) {
         alert("❌ บันทึกไม่สำเร็จ สาเหตุ: " + e.message);
       }
       document.getElementById('loadingOverlay').classList.add('hidden');
     }
 
+    // ==========================================
+    // 📊 ระบบ Dashboard เงินเดือน
+    // ==========================================
     async function openSalaryDashboard() {
       var dateVal = document.getElementById('mainDate').value;
       if (!dateVal) return alert("กรุณาเลือกวันที่ก่อนครับ");
@@ -298,7 +332,6 @@
         
         var html = `<table><tr><th>ชื่อ</th><th>วันทำงาน</th><th>ลา(ชม.)</th><th>รวมรับ (สุทธิ)</th></tr>`;
         data.forEach(s => {
-          // โชว์แค่ยอดรวมเพื่อความคลีนในมือถือ
           html += `<tr>
             <td><strong>${s.name}</strong></td>
             <td>${s.workedDays}</td>
@@ -311,18 +344,15 @@
         document.getElementById('salaryMonthText').innerText = `ข้อมูลเดือน ${month}/${year}`;
         document.getElementById('salaryTableArea').innerHTML = html;
         document.getElementById('salaryOverlay').classList.remove('hidden');
-      } catch (e) {
-        alert("❌ ดึงข้อมูลไม่สำเร็จ สาเหตุ: " + e.message);
-      }
+      } catch (e) { alert("❌ ดึงข้อมูลไม่สำเร็จ สาเหตุ: " + e.message); }
       document.getElementById('loadingOverlay').classList.add('hidden');
     }
 
     function postSalariesToExpenses() {
       if (!confirm("ระบบจะดึงยอดเงินเดือนทุกคนไปใส่ในช่องรายจ่าย\nยืนยันหรือไม่?")) return;
       
-      // หาช่องว่าง หรือสร้างใหม่
       var wrappers = document.querySelectorAll('.swipe-wrapper');
-      var emptyRowsNeeded = (currentSalaryData.length * 2) - wrappers.length; // เผื่อเงินพิเศษ
+      var emptyRowsNeeded = (currentSalaryData.length * 2) - wrappers.length; 
       for(let i=0; i < emptyRowsNeeded; i++) addRow();
 
       currentSalaryData.forEach(s => {
@@ -335,12 +365,14 @@
         }
       });
       
-      doSync(); // เซฟออโต้ทันที
+      doSync(); 
       document.getElementById('salaryOverlay').classList.add('hidden');
-      alert("✅ ดึงยอดเงินเดือนลงตารางรายจ่ายเรียบร้อยแล้ว\nตรวจสอบและกดปุ่ม 'ส่งยอดสรุปชีท' ได้เลยครับ");
+      alert("✅ ดึงยอดเงินเดือนลงตารางรายจ่ายเรียบร้อยแล้ว\nตรวจสอบและกดปุ่ม '🚀 ส่งยอดสรุปชีท' ด้านล่างได้เลยครับ");
     }
 
-    // --- ระบบ POS ---
+    // ==========================================
+    // 🛒 ระบบ POS เดิม
+    // ==========================================
     async function pushSync() {
       if(!confirm("ต้องการซิงค์ข้อมูลใหม่จากไฟล์ Database ใช่ไหม?")) return;
       document.getElementById('loadingOverlay').classList.remove('hidden');
@@ -371,8 +403,7 @@
       appStarted = true;
       
       var savedItems = localStorage.getItem('BOY_JUICE_ITEMS');
-      if (savedItems) { itemDict = JSON.parse(savedItems); } 
-      else { pullItems(); }
+      if (savedItems) { itemDict = JSON.parse(savedItems); } else { pullItems(); }
 
       var savedStaff = localStorage.getItem('BOY_STAFF');
       if (savedStaff) { staffList = JSON.parse(savedStaff); }
@@ -423,7 +454,7 @@
     }
 
     document.addEventListener("click", function (e) { 
-      if(!e.target.classList.contains('i') && e.target.id !== 'hrName') { closeAllLists(); } 
+      if(!e.target.classList.contains('i') && !e.target.classList.contains('hr-name')) { closeAllLists(); } 
     });
 
     function checkAutoFill(inputEl) {
@@ -559,7 +590,11 @@
       try {
         const parsed = await apiCall('loadData', { date: date });
         var d = {}; try { d = JSON.parse(parsed.draft || '{}'); } catch(e) {}
+        
+        // ล้างข้อมูลหน้าจอและโหลดใหม่
         document.getElementById('expenseList').innerHTML = '';
+        clearLeaveList(); // เคลียร์ช่องให้สะอาดทุกครั้งที่เปลี่ยนวัน
+
         document.getElementById('val-cash').value = (d.cash) ? d.cash.v : '';
         document.getElementById('val-transfer').value = (d.transfer) ? d.transfer.v : '';
         document.getElementById('otherIncomeVal').value = (d.other) ? d.other.v : '';

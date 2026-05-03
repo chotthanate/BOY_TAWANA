@@ -130,13 +130,14 @@
   </div>
 
   <script>
-    // 🚨 อย่าลืมเอาลิงก์ Apps Script เดิมมาใส่ตรงนี้เหมือนเดิมนะครับ!
-    const WEB_APP_URL = "URL_APPS_SCRIPT_เดิมของคุณบอย_ที่มี_doPost_API";
+    // 🚨 🚨 เอา URL ของ Web App ที่ Copy มาวางตรงนี้ได้เลยครับ! 🚨 🚨
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwLNcIbQzC30EhRAQQM2e7_WQysgepfPnyadJ6D5T5wE_eMhGPU9JKl_teDfPu7he6Z/exec";
 
     var timer;
     var appStarted = false;
     var itemDict = {}; 
 
+    // ✨ ใส่ Headers ให้ทะลุการบล็อกของ Google และดัก Error ให้ชัดเจนขึ้น
     async function apiCall(action, data = {}) {
       try {
         const response = await fetch(WEB_APP_URL, {
@@ -144,18 +145,12 @@
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify({ action: action, ...data })
         });
-        
-        // อ่านข้อความที่ตอบกลับมาก่อน (เพื่อดักจับ Error ของ Google)
         const textResponse = await response.text(); 
-        
         try {
-          return JSON.parse(textResponse); // พยายามแปลงเป็น JSON
+          return JSON.parse(textResponse);
         } catch (parseErr) {
-          // ถ้ามันแปลงไม่ได้ แสดงว่า Google ส่งหน้าเว็บ Error มาให้เรา!
-          console.error("Google ตอบกลับมาเป็น HTML Error:", textResponse);
-          throw new Error("หลังบ้านตอบกลับผิดปกติ (ดูใน Console)");
+          throw new Error("หลังบ้านตอบกลับผิดปกติ (เช็กสิทธิ์ตอน Deploy)");
         }
-
       } catch (err) { 
         console.error("API Error:", err); 
         throw err; 
@@ -173,7 +168,7 @@
         const res = await apiCall('syncCloud');
         if (res.status && res.status.indexOf("Error") > -1) { alert(res.status); } 
         else { alert("✅ อัปเดตข้อมูลเข้า Cloud สำเร็จ!"); await pullItems(); }
-      } catch (e) { alert("❌ ซิงค์ไม่สำเร็จ กรุณาตรวจสอบอินเทอร์เน็ต"); }
+      } catch (e) { alert("❌ ซิงค์ไม่สำเร็จ สาเหตุ: " + e.message); }
       document.getElementById('loadingOverlay').classList.add('hidden');
     }
 
@@ -300,7 +295,6 @@
           exp.push({ i: ins[0].value, q: ins[1].value, u: ins[2].value, p: ins[3].value });
         }
       }
-      // 🛠️ ปรับโครงสร้างข้อมูลส่งไปหลังบ้าน (Grab หายไปแล้ว และ s เป็น true ตลอด)
       var data = {
         cash: { v: document.getElementById('val-cash').value, s: true },
         transfer: { v: document.getElementById('val-transfer').value, s: true },
@@ -316,7 +310,7 @@
           document.getElementById('displayDateText').innerText = `${dObj.getDate()} ${thMonths[dObj.getMonth()]} ${dObj.getFullYear().toString().slice(-2)}`;
           document.getElementById('successOverlay').classList.remove('hidden');
         } else { alert("แจ้งเตือนจากระบบ: " + res.status); }
-      } catch (err) { document.getElementById('loadingOverlay').classList.add('hidden'); alert("❌ ส่งไม่สำเร็จ"); }
+      } catch (err) { document.getElementById('loadingOverlay').classList.add('hidden'); alert("❌ ส่งไม่สำเร็จ สาเหตุ: " + err.message); }
     }
 
     function goToNextDay() {
@@ -391,9 +385,7 @@
           document.getElementById('lockedOverlay').classList.add('hidden');
           document.getElementById('btnSubmit').style.display = 'block';
         }
-      } catch (err) { 
-  alert("❌ ดึงข้อมูลไม่สำเร็จ สาเหตุ: " + err.message); 
-}
+      } catch (err) { alert("❌ ดึงข้อมูลไม่สำเร็จ สาเหตุ: " + err.message); }
       document.getElementById('loadingOverlay').classList.add('hidden');
     }
     

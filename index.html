@@ -141,12 +141,25 @@
       try {
         const response = await fetch(WEB_APP_URL, {
           method: 'POST',
-          // 🚨 เพิ่มบรรทัด headers ด้านล่างนี้เข้าไป เพื่อปลดล็อกการบล็อกของ Google ครับ
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify({ action: action, ...data })
         });
-        return await response.json();
-      } catch (err) { console.error("API Error:", err); throw err; }
+        
+        // อ่านข้อความที่ตอบกลับมาก่อน (เพื่อดักจับ Error ของ Google)
+        const textResponse = await response.text(); 
+        
+        try {
+          return JSON.parse(textResponse); // พยายามแปลงเป็น JSON
+        } catch (parseErr) {
+          // ถ้ามันแปลงไม่ได้ แสดงว่า Google ส่งหน้าเว็บ Error มาให้เรา!
+          console.error("Google ตอบกลับมาเป็น HTML Error:", textResponse);
+          throw new Error("หลังบ้านตอบกลับผิดปกติ (ดูใน Console)");
+        }
+
+      } catch (err) { 
+        console.error("API Error:", err); 
+        throw err; 
+      }
     }
 
     function toggleSettings() {
@@ -378,7 +391,9 @@
           document.getElementById('lockedOverlay').classList.add('hidden');
           document.getElementById('btnSubmit').style.display = 'block';
         }
-      } catch (err) { alert("❌ ดึงข้อมูลไม่สำเร็จ"); }
+      } catch (err) { 
+  alert("❌ ดึงข้อมูลไม่สำเร็จ สาเหตุ: " + err.message); 
+}
       document.getElementById('loadingOverlay').classList.add('hidden');
     }
     

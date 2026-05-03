@@ -193,9 +193,20 @@
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify({ action: action, ...data })
         });
+        
         const textResponse = await response.text(); 
-        try { return JSON.parse(textResponse); } catch (parseErr) { throw new Error("หลังบ้านตอบกลับผิดปกติ"); }
-      } catch (err) { console.error("API Error:", err); throw err; }
+        
+        try {
+          return JSON.parse(textResponse);
+        } catch (parseErr) {
+          // 🚨 ถ้าแปลงเป็น JSON ไม่ได้ ให้โชว์หน้าเว็บหรือข้อความที่ Google ส่งมาตรงๆ เลย!
+          alert("🚨 Google เตะสกัด! ข้อความที่ตอบกลับมาคือ:\n\n" + textResponse.substring(0, 200));
+          throw new Error("หลังบ้านตอบกลับผิดปกติ");
+        }
+      } catch (err) { 
+        console.error("API Error:", err); 
+        throw err; 
+      }
     }
 
     function toggleSettings() { document.getElementById('settingsOverlay').classList.toggle('hidden'); }

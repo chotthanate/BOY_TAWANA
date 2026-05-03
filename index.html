@@ -25,9 +25,9 @@
     .locked-date-btn { display: block; width: 100% !important; box-sizing: border-box !important; margin: 0 auto 15px auto !important; text-align: center; font-weight: bold; font-size: 1.1rem; color: white; background: var(--primary); border: none; border-radius: 12px; padding: 15px; box-shadow: 0 4px 10px rgba(46, 204, 113, 0.2); }
     .locked-date-btn::-webkit-calendar-picker-indicator { filter: invert(1); }
     
-    .btn-inc { border: 1px solid #ddd; background: #fff; padding: 10px 0; border-radius: 12px; font-weight: bold; width: 100%; font-size: 0.85rem; transition: 0.2s; }
-    .btn-inc.active { background: #e8f5e9; border: 2px solid var(--primary); color: var(--primary); }
-    .input-group { display: flex; gap: 8px; margin-top: 10px; background: #f9f9f9; padding: 10px; border-radius: 12px; align-items: center; border: 1px solid #eee; }
+    /* 🛠️ ปรับสไตล์ช่องรายรับให้ดูสะอาดขึ้น */
+    .input-group { display: flex; gap: 10px; margin-bottom: 10px; background: #f9f9f9; padding: 10px; border-radius: 12px; align-items: center; border: 1px solid #eee; }
+    .input-group span { font-size: 1.2rem; min-width: 30px; text-align: center; }
     .hidden { display: none !important; }
     
     .swipe-wrapper { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; margin-bottom: 8px; scroll-behavior: smooth; }
@@ -61,16 +61,16 @@
   <div id="formArea" style="position: relative;">
     <div class="card">
       <h3>💰 รายรับ</h3>
-      <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px;">
-        <button id="btn-cash" class="btn-inc" onclick="toggleInput('cash')">💵 เงินสด</button>
-        <button id="btn-transfer" class="btn-inc" onclick="toggleInput('transfer')">📱 โอน</button>
-        <button id="btn-grab" class="btn-inc" onclick="toggleInput('grab')">🛵 Grab</button>
+      <div class="input-group">
+        <span>💵</span>
+        <input type="number" inputmode="decimal" id="val-cash" placeholder="ระบุยอดเงินสด" onchange="doSync()">
       </div>
-      <div id="group-cash" class="input-group hidden">💵 <input type="number" inputmode="decimal" id="val-cash" placeholder="ระบุยอดเงินสด" onchange="doSync()"></div>
-      <div id="group-transfer" class="input-group hidden">📱 <input type="number" inputmode="decimal" id="val-transfer" placeholder="ระบุยอดโอน" onchange="doSync()"></div>
-      <div id="group-grab" class="input-group hidden">🛵 <input type="number" inputmode="decimal" id="val-grab" placeholder="ระบุยอด Grab" onchange="doSync()"></div>
+      <div class="input-group">
+        <span>📱</span>
+        <input type="number" inputmode="decimal" id="val-transfer" placeholder="ระบุยอดโอน" onchange="doSync()">
+      </div>
       
-      <div style="display:grid; grid-template-columns: 2fr 1fr; gap:8px; margin-top:10px;">
+      <div style="display:grid; grid-template-columns: 2fr 1fr; gap:8px; margin-top:5px;">
         <input type="text" id="otherIncomeNote" placeholder="รายได้อื่น (ระบุ)" onchange="doSync()">
         <input type="number" inputmode="decimal" id="otherIncomeVal" placeholder="บาท" onchange="doSync()">
       </div>
@@ -130,14 +130,13 @@
   </div>
 
   <script>
-    // 🚨 🚨 เอา URL ของ Web App ที่ Copy มาวางตรงนี้ได้เลยครับ! 🚨 🚨
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwLNcIbQzC30EhRAQQM2e7_WQysgepfPnyadJ6D5T5wE_eMhGPU9JKl_teDfPu7he6Z/exec";
+    // 🚨 อย่าลืมเอาลิงก์ Apps Script เดิมมาใส่ตรงนี้เหมือนเดิมนะครับ!
+    const WEB_APP_URL = "URL_APPS_SCRIPT_เดิมของคุณบอย_ที่มี_doPost_API";
 
     var timer;
     var appStarted = false;
     var itemDict = {}; 
 
-    // --- ระบบเชื่อมต่อ API หลัก (ทดแทน google.script.run) ---
     async function apiCall(action, data = {}) {
       try {
         const response = await fetch(WEB_APP_URL, {
@@ -145,10 +144,7 @@
           body: JSON.stringify({ action: action, ...data })
         });
         return await response.json();
-      } catch (err) {
-        console.error("API Error:", err);
-        throw err;
-      }
+      } catch (err) { console.error("API Error:", err); throw err; }
     }
 
     function toggleSettings() {
@@ -160,15 +156,9 @@
       document.getElementById('loadingOverlay').classList.remove('hidden');
       try {
         const res = await apiCall('syncCloud');
-        if (res.status && res.status.indexOf("Error") > -1) {
-          alert(res.status);
-        } else {
-          alert("✅ อัปเดตข้อมูลเข้า Cloud สำเร็จ!");
-          await pullItems();
-        }
-      } catch (e) {
-        alert("❌ ซิงค์ไม่สำเร็จ กรุณาตรวจสอบอินเทอร์เน็ต");
-      }
+        if (res.status && res.status.indexOf("Error") > -1) { alert(res.status); } 
+        else { alert("✅ อัปเดตข้อมูลเข้า Cloud สำเร็จ!"); await pullItems(); }
+      } catch (e) { alert("❌ ซิงค์ไม่สำเร็จ กรุณาตรวจสอบอินเทอร์เน็ต"); }
       document.getElementById('loadingOverlay').classList.add('hidden');
     }
 
@@ -192,32 +182,14 @@
       var savedItems = localStorage.getItem('BOY_JUICE_ITEMS');
       if (savedItems) { itemDict = JSON.parse(savedItems); } 
       else { pullItems(); }
-
       var today = new Date();
-      var yyyy = today.getFullYear();
-      var mm = String(today.getMonth() + 1).padStart(2, '0');
-      var dd = String(today.getDate()).padStart(2, '0');
-      document.getElementById('mainDate').value = yyyy + "-" + mm + "-" + dd;
+      document.getElementById('mainDate').value = today.toISOString().split('T')[0];
       loadData();
-    }
-
-    function toggleInput(type) {
-      var el = document.getElementById('group-' + type);
-      var btn = document.getElementById('btn-' + type);
-      var input = document.getElementById('val-' + type);
-      el.classList.toggle('hidden');
-      btn.classList.toggle('active');
-      if(!el.classList.contains('hidden')) {
-        input.focus();
-        setTimeout(function() { input.click(); input.focus(); }, 50);
-      }
-      doSync();
     }
 
     function showSuggestions(inp) {
       var val = inp.value.trim();
       closeAllLists();
-      
       var a = document.createElement("DIV");
       a.setAttribute("class", "autocomplete-items");
       var rect = inp.getBoundingClientRect();
@@ -225,7 +197,6 @@
       a.style.left = (rect.left + window.scrollX) + "px";
       a.style.width = rect.width + "px";
       document.body.appendChild(a); 
-      
       var count = 0;
       for (var key in itemDict) {
         if (!val || key.toLowerCase().indexOf(val.toLowerCase()) > -1) {
@@ -233,10 +204,7 @@
           if (val) {
             var matchIdx = key.toLowerCase().indexOf(val.toLowerCase());
             b.innerHTML = key.substring(0, matchIdx) + "<strong><span style='color: #2ecc71;'>" + key.substring(matchIdx, matchIdx + val.length) + "</span></strong>" + key.substring(matchIdx + val.length);
-          } else {
-            b.innerHTML = key; 
-          }
-          
+          } else { b.innerHTML = key; }
           b.innerHTML += "<input type='hidden' value='" + key + "'>";
           b.addEventListener("click", function(e) {
             inp.value = this.getElementsByTagName("input")[0].value;
@@ -293,7 +261,6 @@
         document.getElementById('expenseList').innerHTML = '';
         document.getElementById('val-cash').value = '';
         document.getElementById('val-transfer').value = '';
-        document.getElementById('val-grab').value = '';
         document.getElementById('otherIncomeVal').value = '';
         document.getElementById('otherIncomeNote').value = '';
         for(var i=0; i<4; i++) addRow();
@@ -303,11 +270,7 @@
 
     function syncDateFromLock() {
       var lDate = document.getElementById('lockedDate').value;
-      if(lDate) {
-        document.getElementById('mainDate').value = lDate;
-        document.getElementById('lockedOverlay').classList.add('hidden');
-        loadData();
-      }
+      if(lDate) { document.getElementById('mainDate').value = lDate; document.getElementById('lockedOverlay').classList.add('hidden'); loadData(); }
     }
 
     async function submitToSheet() {
@@ -322,14 +285,13 @@
           exp.push({ i: ins[0].value, q: ins[1].value, u: ins[2].value, p: ins[3].value });
         }
       }
+      // 🛠️ ปรับโครงสร้างข้อมูลส่งไปหลังบ้าน (Grab หายไปแล้ว และ s เป็น true ตลอด)
       var data = {
-        cash: { v: document.getElementById('val-cash').value, s: !document.getElementById('group-cash').classList.contains('hidden') },
-        transfer: { v: document.getElementById('val-transfer').value, s: !document.getElementById('group-transfer').classList.contains('hidden') },
-        grab: { v: document.getElementById('val-grab').value, s: !document.getElementById('group-grab').classList.contains('hidden') },
+        cash: { v: document.getElementById('val-cash').value, s: true },
+        transfer: { v: document.getElementById('val-transfer').value, s: true },
         other: { v: document.getElementById('otherIncomeVal').value, n: document.getElementById('otherIncomeNote').value },
         exp: exp
       };
-      
       try {
         const res = await apiCall('submit', { date: date, data: data });
         document.getElementById('loadingOverlay').classList.add('hidden');
@@ -339,45 +301,32 @@
           document.getElementById('displayDateText').innerText = `${dObj.getDate()} ${thMonths[dObj.getMonth()]} ${dObj.getFullYear().toString().slice(-2)}`;
           document.getElementById('successOverlay').classList.remove('hidden');
         } else { alert("แจ้งเตือนจากระบบ: " + res.status); }
-      } catch (err) {
-        document.getElementById('loadingOverlay').classList.add('hidden');
-        alert("❌ ส่งไม่สำเร็จ: กรุณาตรวจสอบอินเทอร์เน็ต"); 
-      }
+      } catch (err) { document.getElementById('loadingOverlay').classList.add('hidden'); alert("❌ ส่งไม่สำเร็จ"); }
     }
 
     function goToNextDay() {
       var dateInput = document.getElementById('mainDate');
-      var d = new Date(dateInput.value);
-      d.setDate(d.getDate() + 1);
-      var yyyy = d.getFullYear();
-      var mm = String(d.getMonth() + 1).padStart(2, '0');
-      var dd = String(d.getDate()).padStart(2, '0');
-      dateInput.value = yyyy + "-" + mm + "-" + dd;
-      document.getElementById('successOverlay').classList.add('hidden');
-      loadData();
+      var d = new Date(dateInput.value); d.setDate(d.getDate() + 1);
+      dateInput.value = d.toISOString().split('T')[0];
+      document.getElementById('successOverlay').classList.add('hidden'); loadData();
     }
 
     function unlockScreen() { document.getElementById('successOverlay').classList.add('hidden'); unlockEditMode(); }
-    
     async function unlockEditMode() {
       document.getElementById('lockedOverlay').classList.add('hidden');
       document.getElementById('btnSubmit').style.display = 'block';
-      var date = document.getElementById('mainDate').value;
-      await apiCall('unlockDate', { date: date });
+      await apiCall('unlockDate', { date: document.getElementById('mainDate').value });
     }
 
     function nav(e, idx) {
       if (e.keyCode === 13) {
-        e.preventDefault();
-        closeAllLists();
+        e.preventDefault(); closeAllLists();
         var currentRow = e.target.closest('.exp-row'); 
-        var currentWrapper = currentRow.parentElement; 
         var inputs = currentRow.querySelectorAll('input:not([type="hidden"])');
         if (idx < 3) { inputs[idx+1].focus(); } 
         else {
-          var nextWrapper = currentWrapper.nextElementSibling;
-          if (nextWrapper && nextWrapper.classList.contains('swipe-wrapper')) { nextWrapper.querySelector('.i').focus(); } 
-          else { addRow().querySelector('.i').focus(); }
+          var nextWrapper = currentRow.parentElement.nextElementSibling;
+          if (nextWrapper) { nextWrapper.querySelector('.i').focus(); } else { addRow().querySelector('.i').focus(); }
         }
       }
     }
@@ -391,14 +340,11 @@
         var wrappers = document.querySelectorAll('.swipe-wrapper');
         for(var w=0; w<wrappers.length; w++) {
           var ins = wrappers[w].querySelectorAll('.exp-row input:not([type="hidden"])');
-          if (ins[0].value || ins[1].value || ins[2].value || ins[3].value) {
-            exp.push({ i: ins[0].value, q: ins[1].value, u: ins[2].value, p: ins[3].value });
-          }
+          if (ins[0].value || ins[1].value || ins[2].value || ins[3].value) { exp.push({ i: ins[0].value, q: ins[1].value, u: ins[2].value, p: ins[3].value }); }
         }
         var data = {
-          cash: { v: document.getElementById('val-cash').value, s: !document.getElementById('group-cash').classList.contains('hidden') },
-          transfer: { v: document.getElementById('val-transfer').value, s: !document.getElementById('group-transfer').classList.contains('hidden') },
-          grab: { v: document.getElementById('val-grab').value, s: !document.getElementById('group-grab').classList.contains('hidden') },
+          cash: { v: document.getElementById('val-cash').value, s: true },
+          transfer: { v: document.getElementById('val-transfer').value, s: true },
           other: { v: document.getElementById('otherIncomeVal').value, n: document.getElementById('otherIncomeNote').value },
           exp: exp
         };
@@ -409,42 +355,19 @@
     async function loadData() {
       var date = document.getElementById('mainDate').value;
       if(!date) return;
-      var fruits = ['🍉', '🍍', '🍓', '🍊', '🍇', '🥑'];
-      document.getElementById('fruitIcon').innerText = fruits[Math.floor(Math.random() * fruits.length)];
       document.getElementById('loadingOverlay').classList.remove('hidden');
-      
       try {
         const parsed = await apiCall('loadData', { date: date });
         var d = {}; try { d = JSON.parse(parsed.draft || '{}'); } catch(e) {}
         document.getElementById('expenseList').innerHTML = '';
-        var btns = document.querySelectorAll('.btn-inc');
-        for(var b=0; b<btns.length; b++) btns[b].classList.remove('active');
-        var grps = document.querySelectorAll('.input-group');
-        for(var g=0; g<grps.length; g++) grps[g].classList.add('hidden');
-        document.getElementById('otherIncomeVal').value = '';
-        document.getElementById('otherIncomeNote').value = '';
-        
-        if (d.cash) {
-          if (d.cash.s) { document.getElementById('group-cash').classList.remove('hidden'); document.getElementById('btn-cash').classList.add('active'); }
-          document.getElementById('val-cash').value = d.cash.v || '';
-        }
-        if (d.transfer) {
-          if (d.transfer.s) { document.getElementById('group-transfer').classList.remove('hidden'); document.getElementById('btn-transfer').classList.add('active'); }
-          document.getElementById('val-transfer').value = d.transfer.v || '';
-        }
-        if (d.grab) {
-          if (d.grab.s) { document.getElementById('group-grab').classList.remove('hidden'); document.getElementById('btn-grab').classList.add('active'); }
-          document.getElementById('val-grab').value = d.grab.v || '';
-        }
-        if (d.other) {
-          document.getElementById('otherIncomeVal').value = d.other.v || '';
-          document.getElementById('otherIncomeNote').value = d.other.n || '';
-        }
+        document.getElementById('val-cash').value = (d.cash) ? d.cash.v : '';
+        document.getElementById('val-transfer').value = (d.transfer) ? d.transfer.v : '';
+        document.getElementById('otherIncomeVal').value = (d.other) ? d.other.v : '';
+        document.getElementById('otherIncomeNote').value = (d.other) ? d.other.n : '';
         if (d.exp && d.exp.length > 0) {
           for(var r=0; r<d.exp.length; r++) { addRow(d.exp[r].i, d.exp[r].q, d.exp[r].u, d.exp[r].p); }
           addRow(); 
         } else { for(var i=0; i<4; i++) addRow(); }
-        
         if (parsed.submitted) {
           document.getElementById('lockedDate').value = date; 
           document.getElementById('lockedOverlay').classList.remove('hidden');
@@ -453,16 +376,11 @@
           document.getElementById('lockedOverlay').classList.add('hidden');
           document.getElementById('btnSubmit').style.display = 'block';
         }
-        document.getElementById('loadingOverlay').classList.add('hidden');
-      } catch (err) {
-        document.getElementById('loadingOverlay').classList.add('hidden');
-        alert("❌ ดึงข้อมูลไม่สำเร็จ: กรุณาตรวจสอบอินเทอร์เน็ต"); 
-      }
+      } catch (err) { alert("❌ ดึงข้อมูลไม่สำเร็จ"); }
+      document.getElementById('loadingOverlay').classList.add('hidden');
     }
     
-    document.addEventListener("DOMContentLoaded", initApp);
     window.onload = initApp;
-    setTimeout(initApp, 300);
   </script>
 </body>
 </html>

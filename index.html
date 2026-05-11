@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
@@ -58,6 +58,13 @@
     .radio-group { display: flex; align-items: center; gap: 15px; margin-top: 8px; font-size: 15px; }
     .radio-group label { display: flex; align-items: center; gap: 5px; cursor: pointer; color: #333; }
     .radio-group input[type="radio"] { width: 20px; height: 20px; accent-color: var(--primary); }
+    .saved-leave-area { margin-top: 14px; text-align: left; border-top: 1px solid #eee; padding-top: 12px; }
+    .saved-leave-title { font-size: 0.9rem; font-weight: bold; color: #333; margin-bottom: 8px; }
+    .saved-leave-empty { font-size: 0.85rem; color: #888; background: #f8f8f8; padding: 10px; border-radius: 10px; text-align: center; }
+    .saved-leave-item { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; background: #f8f8f8; border: 1px solid #eee; border-radius: 10px; padding: 10px; margin-bottom: 8px; }
+    .saved-leave-name { font-weight: bold; color: #333; }
+    .saved-leave-meta { font-size: 0.8rem; color: #666; margin-top: 3px; }
+    .btn-cancel-leave { border: none; background: #fff1f0; color: var(--danger); border-radius: 10px; padding: 9px 10px; font-weight: bold; cursor: pointer; }
   </style>
 </head>
 <body>
@@ -97,6 +104,10 @@
       <button class="btn-main" style="background: #e8f5e9; color: var(--primary); border: 1px solid var(--primary); margin-top: 10px; padding: 15px;" onclick="saveMultipleLeaves()">
         📌 บันทึกข้อมูลการลา
       </button>
+      <div class="saved-leave-area">
+        <div class="saved-leave-title">รายการลาที่บันทึกแล้วของวันที่เลือก</div>
+        <div id="savedLeaveList" class="saved-leave-empty">ยังไม่มีรายการลาในวันที่เลือก</div>
+      </div>
     </div>
   </div>
 
@@ -319,8 +330,91 @@
         await apiCall('saveMultipleLeaves', { date: date, leaves: leavesToSave });
         alert(`✅ บันทึกการลา ${leavesToSave.length} รายการ เรียบร้อยแล้ว`);
         clearLeaveList(); // บันทึกเสร็จให้ล้างช่องทิ้ง ป้องกันส่งซ้ำ
+        await refreshSavedLeaves();
       } catch (e) {
         alert("❌ บันทึกไม่สำเร็จ สาเหตุ: " + e.message);
+      }
+      document.getElementById('loadingOverlay').classList.add('hidden');
+    }
+
+    function escapeHtml(value) {
+      return String(value === null || value === undefined ? '' : value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function getLeaveTypeText(type, hours) {
+      if (type === 'Hourly') return `รายชั่วโมง ${hours || 0} ชม.`;
+      return 'ลาเต็มวัน';
+    }
+
+    function renderSavedLeaves(leaves) {
+      const list = document.getElementById('savedLeaveList');
+      if (!list) return;
+
+      if (!leaves || leaves.length === 0) {
+        list.className = 'saved-leave-empty';
+        list.innerHTML = 'ยังไม่มีรายการลาในวันที่เลือก';
+        return;
+      }
+
+      list.className = '';
+      list.innerHTML = leaves.map(function(leave) {
+        const typeText = getLeaveTypeText(leave.type, leave.hours);
+        return `
+          <div class="saved-leave-item">
+            <div>
+              <div class="saved-leave-name">${escapeHtml(leave.name)}</div>
+              <div class="saved-leave-meta">${escapeHtml(typeText)}</div>
+            </div>
+            <button class="btn-cancel-leave" data-row="${escapeHtml(leave.rowNumber)}" data-name="${escapeHtml(leave.name)}">ยกเลิก</button>
+          </div>
+        `;
+      }).join('');
+
+      list.querySelectorAll('.btn-cancel-leave').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          cancelSavedLeave(this.dataset.row, this.dataset.name);
+        });
+      });
+    }
+
+    async function refreshSavedLeaves() {
+      const date = document.getElementById('mainDate').value;
+      const list = document.getElementById('savedLeaveList');
+      if (!list) return;
+      if (!date) {
+        renderSavedLeaves([]);
+        return;
+      }
+
+      try {
+        const res = await apiCall('getLeavesByDate', { date: date });
+        if (res.status === 'error') throw new Error(res.message || 'โหลดรายการลาไม่สำเร็จ');
+        renderSavedLeaves(res.leaves || []);
+      } catch (e) {
+        list.className = 'saved-leave-empty';
+        list.innerHTML = 'โหลดรายการลาที่บันทึกแล้วไม่สำเร็จ';
+        console.error('Load leaves error:', e);
+      }
+    }
+
+    async function cancelSavedLeave(rowNumber, staffName) {
+      const date = document.getElementById('mainDate').value;
+      if (!date) return alert("กรุณาเลือกวันที่ก่อนครับ");
+      if (!confirm(`ยืนยันยกเลิกการลาของ ${staffName} ในวันที่เลือกหรือไม่?`)) return;
+
+      document.getElementById('loadingOverlay').classList.remove('hidden');
+      try {
+        const res = await apiCall('cancelLeaveRecord', { rowNumber: rowNumber, date: date });
+        if (res.status === 'error') throw new Error(res.message || 'ยกเลิกไม่สำเร็จ');
+        await refreshSavedLeaves();
+        alert("✅ ยกเลิกรายการลาเรียบร้อยแล้ว");
+      } catch (e) {
+        alert("❌ ยกเลิกไม่สำเร็จ สาเหตุ: " + e.message);
       }
       document.getElementById('loadingOverlay').classList.add('hidden');
     }
@@ -605,6 +699,7 @@
         // ล้างข้อมูลหน้าจอและโหลดใหม่
         document.getElementById('expenseList').innerHTML = '';
         clearLeaveList(); // เคลียร์ช่องให้สะอาดทุกครั้งที่เปลี่ยนวัน
+        await refreshSavedLeaves();
 
         document.getElementById('val-cash').value = (d.cash) ? d.cash.v : '';
         document.getElementById('val-transfer').value = (d.transfer) ? d.transfer.v : '';

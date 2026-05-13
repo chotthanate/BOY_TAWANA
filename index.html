@@ -633,6 +633,11 @@
           const thMonths = ["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."];
           document.getElementById('displayDateText').innerText = `${dObj.getDate()} ${thMonths[dObj.getMonth()]} ${dObj.getFullYear().toString().slice(-2)}`;
           document.getElementById('successOverlay').classList.remove('hidden');
+          if (res.stockWarnings && res.stockWarnings.length > 0) {
+            setTimeout(function() {
+              alert("แจ้งเตือนสต็อก:\n- " + res.stockWarnings.join("\n- "));
+            }, 150);
+          }
         } else { alert("แจ้งเตือนจากระบบ: " + res.status); }
       } catch (err) { document.getElementById('loadingOverlay').classList.add('hidden'); alert("❌ ส่งไม่สำเร็จ สาเหตุ: " + err.message); }
     }

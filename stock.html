@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>BOY Juice Stock</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    :root { --primary:#2ecc71; --blue:#007aff; --danger:#ff3b30; --warn:#ff9500; --bg:#f2f2f7; --text:#1f2933; }
+    body { margin:0; padding:12px; padding-bottom:40px; background:var(--bg); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; color:var(--text); }
+    .topbar { display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; }
+    h1 { font-size:1.2rem; margin:0; }
+    .link-btn, .icon-btn { border:none; border-radius:12px; background:white; color:#333; padding:10px 12px; font-weight:700; box-shadow:0 1px 6px rgba(0,0,0,0.06); text-decoration:none; cursor:pointer; }
+    .card { background:white; border-radius:16px; padding:14px; margin-bottom:12px; box-shadow:0 2px 8px rgba(0,0,0,0.05); }
+    .stats { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .stat { background:#f8f8f8; border-radius:12px; padding:12px; }
+    .stat-label { font-size:0.8rem; color:#667085; }
+    .stat-value { font-size:1.5rem; font-weight:800; margin-top:4px; }
+    .toolbar { display:grid; grid-template-columns:1fr auto; gap:8px; align-items:center; }
+    input, select, textarea { width:100%; border:1px solid #d0d5dd; border-radius:12px; padding:12px; font-size:16px; outline:none; background:white; }
+    input:focus, textarea:focus { border-color:var(--primary); }
+    label.toggle { display:flex; align-items:center; gap:7px; white-space:nowrap; color:#475467; font-size:0.9rem; }
+    label.toggle input { width:18px; height:18px; accent-color:var(--primary); }
+    .low-list { display:grid; gap:8px; }
+    .low-item { display:flex; justify-content:space-between; align-items:center; gap:10px; border:1px solid #ffe0b2; background:#fff8eb; color:#7a4300; padding:10px; border-radius:12px; font-size:0.9rem; }
+    .stock-list { display:grid; gap:10px; }
+    .stock-item { border:1px solid #ececec; border-radius:14px; padding:12px; background:white; }
+    .stock-row { display:grid; grid-template-columns:1fr auto; gap:8px; align-items:start; }
+    .name { font-weight:800; font-size:1rem; }
+    .meta { color:#667085; font-size:0.8rem; margin-top:3px; }
+    .qty { text-align:right; font-size:1.25rem; font-weight:800; color:var(--primary); }
+    .qty.low { color:var(--danger); }
+    .actions { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px; }
+    .action { border:none; border-radius:12px; padding:12px; font-size:0.95rem; font-weight:800; cursor:pointer; }
+    .withdraw { background:#eef6ff; color:var(--blue); }
+    .adjust { background:#effaf3; color:#128a45; }
+    .empty { color:#667085; text-align:center; padding:20px 5px; }
+    .overlay { position:fixed; inset:0; background:rgba(0,0,0,0.72); display:flex; align-items:center; justify-content:center; z-index:1000; padding:14px; }
+    .hidden { display:none !important; }
+    .modal { width:100%; max-width:420px; background:white; border-radius:18px; padding:18px; }
+    .modal h2 { margin:0 0 4px 0; font-size:1.15rem; }
+    .modal-sub { color:#667085; font-size:0.9rem; margin-bottom:12px; }
+    .field { margin-top:10px; }
+    .field label { display:block; font-size:0.82rem; color:#475467; margin-bottom:5px; font-weight:700; }
+    .modal-actions { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:14px; }
+    .primary-btn { border:none; background:var(--primary); color:white; border-radius:12px; padding:13px; font-weight:800; cursor:pointer; }
+    .secondary-btn { border:none; background:#eee; color:#444; border-radius:12px; padding:13px; font-weight:800; cursor:pointer; }
+    #loadingOverlay { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; z-index:2000; pointer-events:none; background:rgba(255,255,255,0.35); }
+    .loader { background:white; padding:14px 18px; border-radius:14px; box-shadow:0 8px 24px rgba(0,0,0,0.18); font-weight:800; color:#333; }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <h1>สต็อกวัตถุดิบ</h1>
+    <a class="link-btn" href="./index.html">หน้าบัญชี</a>
+  </div>
+
+  <div class="card stats">
+    <div class="stat">
+      <div class="stat-label">รายการทั้งหมด</div>
+      <div class="stat-value" id="totalCount">0</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">ใกล้หมด</div>
+      <div class="stat-value" id="lowCount">0</div>
+    </div>
+  </div>
+
+  <div class="card toolbar">
+    <input type="search" id="searchInput" placeholder="ค้นหาวัตถุดิบ / บรรจุภัณฑ์">
+    <label class="toggle"><input type="checkbox" id="lowOnly">ใกล้หมด</label>
+  </div>
+
+  <div class="card">
+    <div class="stat-label" style="margin-bottom:8px;">แจ้งเตือนของใกล้หมด</div>
+    <div id="lowList" class="low-list">
+      <div class="empty">ยังไม่มีรายการใกล้หมด</div>
+    </div>
+  </div>
+
+  <div id="stockList" class="stock-list"></div>
+
+  <div id="stockModal" class="overlay hidden">
+    <div class="modal">
+      <h2 id="modalTitle">ทำรายการสต็อก</h2>
+      <div id="modalSub" class="modal-sub"></div>
+      <div class="field">
+        <label id="qtyLabel">จำนวน</label>
+        <input type="number" id="modalQty" inputmode="decimal" min="0" step="0.01">
+      </div>
+      <div class="field" id="minimumField">
+        <label>จำนวนขั้นต่ำสำหรับแจ้งเตือน</label>
+        <input type="number" id="modalMinimum" inputmode="decimal" min="0" step="0.01">
+      </div>
+      <div class="field">
+        <label>ผู้ทำรายการ</label>
+        <input type="text" id="modalStaff" placeholder="ชื่อพนักงาน">
+      </div>
+      <div class="field">
+        <label>หมายเหตุ</label>
+        <textarea id="modalNote" rows="2" placeholder="เช่น ตั้งต้น, เบิกไปหน้าร้าน"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="secondary-btn" onclick="closeModal()">ยกเลิก</button>
+        <button class="primary-btn" onclick="submitModal()">บันทึก</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="loadingOverlay" class="hidden">
+    <div class="loader">กำลังโหลด...</div>
+  </div>
+
+  <script>
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwLNcIbQzC30EhRAQQM2e7_WQysgepfPnyadJ6D5T5wE_eMhGPU9JKl_teDfPu7he6Z/exec";
+
+    let stockItems = [];
+    let currentItem = null;
+    let currentMode = null;
+
+    async function apiCall(action, data = {}) {
+      const response = await fetch(WEB_APP_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: action, ...data })
+      });
+      const text = await response.text();
+      try {
+        return JSON.parse(text);
+      } catch (e) {
+        alert("หลังบ้านตอบกลับผิดปกติ:\n" + text.substring(0, 200));
+        throw e;
+      }
+    }
+
+    function showLoading(show) {
+      document.getElementById('loadingOverlay').classList.toggle('hidden', !show);
+    }
+
+    function escapeHtml(value) {
+      return String(value === null || value === undefined ? '' : value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function formatQty(value) {
+      const number = Number(value || 0);
+      return Number.isInteger(number) ? number.toString() : number.toFixed(2).replace(/\.?0+$/, '');
+    }
+
+    async function loadStock() {
+      showLoading(true);
+      try {
+        const data = await apiCall('getStockDashboard');
+        if (data.status === 'error') throw new Error(data.message || 'โหลดสต็อกไม่สำเร็จ');
+        stockItems = data.items || [];
+        renderStock();
+      } catch (e) {
+        alert("โหลดสต็อกไม่สำเร็จ: " + e.message);
+      }
+      showLoading(false);
+    }
+
+    function renderStock() {
+      const search = document.getElementById('searchInput').value.trim().toLowerCase();
+      const lowOnly = document.getElementById('lowOnly').checked;
+      const list = document.getElementById('stockList');
+      const lowItems = stockItems.filter(item => item.low);
+      const filtered = stockItems.filter(item => {
+        const text = `${item.name} ${item.mainType} ${item.subType}`.toLowerCase();
+        return (!search || text.indexOf(search) > -1) && (!lowOnly || item.low);
+      });
+
+      document.getElementById('totalCount').innerText = stockItems.length;
+      document.getElementById('lowCount').innerText = lowItems.length;
+      renderLowList(lowItems);
+
+      if (filtered.length === 0) {
+        list.innerHTML = '<div class="card empty">ไม่พบรายการ</div>';
+        return;
+      }
+
+      list.innerHTML = filtered.map(item => `
+        <div class="stock-item">
+          <div class="stock-row">
+            <div>
+              <div class="name">${escapeHtml(item.name)}</div>
+              <div class="meta">${escapeHtml(item.mainType)} / ${escapeHtml(item.subType || '-')} · ขั้นต่ำ ${formatQty(item.minimum)} ${escapeHtml(item.unit || '')}</div>
+            </div>
+            <div class="qty ${item.low ? 'low' : ''}">${formatQty(item.balance)}<div class="meta">${escapeHtml(item.unit || '')}</div></div>
+          </div>
+          <div class="actions">
+            <button class="action withdraw" onclick="openModal('withdraw', '${encodeURIComponent(item.name)}')">เบิก</button>
+            <button class="action adjust" onclick="openModal('adjust', '${encodeURIComponent(item.name)}')">ปรับยอด</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function renderLowList(items) {
+      const lowList = document.getElementById('lowList');
+      if (!items.length) {
+        lowList.innerHTML = '<div class="empty">ยังไม่มีรายการใกล้หมด</div>';
+        return;
+      }
+      lowList.innerHTML = items.map(item => `
+        <div class="low-item">
+          <strong>${escapeHtml(item.name)}</strong>
+          <span>${formatQty(item.balance)} / ขั้นต่ำ ${formatQty(item.minimum)} ${escapeHtml(item.unit || '')}</span>
+        </div>
+      `).join('');
+    }
+
+    function openModal(mode, itemName) {
+      currentMode = mode;
+      const decodedName = decodeURIComponent(itemName);
+      currentItem = stockItems.find(item => item.name === decodedName);
+      if (!currentItem) return;
+
+      document.getElementById('modalTitle').innerText = mode === 'withdraw' ? 'เบิกสินค้า' : 'ปรับยอดสต็อก';
+      document.getElementById('modalSub').innerText = `${currentItem.name} · เหลือ ${formatQty(currentItem.balance)} ${currentItem.unit || ''}`;
+      document.getElementById('qtyLabel').innerText = mode === 'withdraw' ? 'จำนวนที่เบิก' : 'ยอดคงเหลือจริงตอนนี้';
+      document.getElementById('minimumField').classList.toggle('hidden', mode !== 'adjust');
+      document.getElementById('modalQty').value = '';
+      document.getElementById('modalMinimum').value = currentItem.minimum || 0;
+      document.getElementById('modalStaff').value = localStorage.getItem('BOY_STOCK_STAFF') || '';
+      document.getElementById('modalNote').value = '';
+      document.getElementById('stockModal').classList.remove('hidden');
+      setTimeout(() => document.getElementById('modalQty').focus(), 50);
+    }
+
+    function closeModal() {
+      document.getElementById('stockModal').classList.add('hidden');
+      currentMode = null;
+      currentItem = null;
+    }
+
+    async function submitModal() {
+      if (!currentItem || !currentMode) return;
+      const quantity = document.getElementById('modalQty').value;
+      const staffName = document.getElementById('modalStaff').value.trim();
+      const note = document.getElementById('modalNote').value.trim();
+      const minimum = document.getElementById('modalMinimum').value;
+      const action = currentMode === 'withdraw' ? 'withdrawStock' : 'setStockBalance';
+      const payload = {
+        itemName: currentItem.name,
+        quantity: quantity,
+        staffName: staffName,
+        note: note,
+        date: new Date().toISOString().split('T')[0]
+      };
+      if (currentMode === 'adjust') payload.minimum = minimum;
+
+      if (staffName) localStorage.setItem('BOY_STOCK_STAFF', staffName);
+      showLoading(true);
+      try {
+        const res = await apiCall(action, payload);
+        if (res.status === 'error') throw new Error(res.message || 'บันทึกไม่สำเร็จ');
+        closeModal();
+        await loadStock();
+      } catch (e) {
+        alert("บันทึกไม่สำเร็จ: " + e.message);
+      }
+      showLoading(false);
+    }
+
+    document.getElementById('searchInput').addEventListener('input', renderStock);
+    document.getElementById('lowOnly').addEventListener('change', renderStock);
+    window.onload = loadStock;
+  </script>
+</body>
+</html>

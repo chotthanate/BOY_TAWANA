@@ -1,0 +1,1205 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>BOY | Order</title>
+  <style>
+    :root {
+      --primary: #4caf50;
+      --primary-dark: #2f7d32;
+      --secondary: #ff9800;
+      --bg: #f4f9f4;
+      --card-bg: #ffffff;
+      --text: #2f3430;
+      --muted: #6d766f;
+      --border: #dfeee1;
+      --danger: #e53935;
+      --blue: #1976d2;
+      --shadow: 0 2px 10px rgba(24, 86, 31, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    html {
+      background: #e9ecef;
+    }
+
+    body {
+      margin: 0 auto;
+      max-width: 1000px;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      padding-bottom: calc(96px + env(safe-area-inset-bottom));
+      overflow-x: hidden;
+      -webkit-tap-highlight-color: transparent;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.05);
+    }
+
+    button,
+    input,
+    select {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: calc(13px + env(safe-area-inset-top)) 14px 13px;
+      background: var(--primary);
+      color: #fff;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+    }
+
+    .brand {
+      min-width: 0;
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: 0;
+      white-space: nowrap;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .icon-btn {
+      width: 38px;
+      height: 38px;
+      border: 0;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.18);
+      color: #fff;
+      font-weight: 800;
+      font-size: 15px;
+    }
+
+    .icon-btn:disabled {
+      opacity: 0.55;
+      cursor: wait;
+    }
+
+    .status-strip {
+      position: sticky;
+      top: calc(64px + env(safe-area-inset-top));
+      z-index: 90;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 8px 14px;
+      background: #fff;
+      border-bottom: 1px solid #e6eee7;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .status-strip strong {
+      color: var(--primary-dark);
+      font-weight: 800;
+    }
+
+    .main {
+      padding: 14px;
+    }
+
+    .sticky-cat-nav {
+      position: sticky;
+      top: calc(102px + env(safe-area-inset-top));
+      z-index: 80;
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      white-space: nowrap;
+      padding: 10px 0;
+      margin: -4px 0 8px;
+      background: var(--bg);
+      border-bottom: 1px solid #e5efe6;
+      scrollbar-width: none;
+    }
+
+    .sticky-cat-nav::-webkit-scrollbar {
+      display: none;
+    }
+
+    .cat-nav-btn {
+      border: 1px solid #d6e6d8;
+      background: #fff;
+      color: #456147;
+      padding: 8px 13px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 800;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+    }
+
+    .category-title {
+      scroll-margin-top: calc(150px + env(safe-area-inset-top));
+      margin: 22px 0 12px;
+      padding-bottom: 7px;
+      border-bottom: 2px solid var(--primary);
+      color: var(--primary-dark);
+      font-size: 18px;
+      font-weight: 850;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    @media (min-width: 720px) {
+      .grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+      }
+    }
+
+    .product-card {
+      min-width: 0;
+      min-height: 132px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      overflow: hidden;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+    }
+
+    .product-name {
+      min-height: 67px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      padding: 11px 8px 8px;
+      text-align: center;
+      font-size: 14px;
+      font-weight: 850;
+      line-height: 1.25;
+      word-break: break-word;
+    }
+
+    .product-unit {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: 38px minmax(42px, 1fr) 38px;
+      align-items: center;
+      gap: 4px;
+      padding: 7px;
+      border-top: 1px solid #eef5ee;
+      background: #fbfdfb;
+    }
+
+    .qty-btn {
+      width: 36px;
+      height: 36px;
+      border: 0;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #ededed;
+      color: #5d645e;
+      font-size: 22px;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .qty-btn.plus {
+      background: #e8f5e9;
+      color: var(--primary-dark);
+    }
+
+    .qty-input {
+      width: 100%;
+      height: 36px;
+      border: 0;
+      outline: 0;
+      background: transparent;
+      color: var(--primary-dark);
+      text-align: center;
+      font-size: 18px;
+      font-weight: 850;
+    }
+
+    .cart-bar {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 90;
+      max-width: 1000px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 16px calc(14px + env(safe-area-inset-bottom));
+      background: #fff;
+      box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.06);
+    }
+
+    .total {
+      font-size: 18px;
+      font-weight: 850;
+    }
+
+    .total span {
+      color: var(--primary-dark);
+    }
+
+    .primary-btn,
+    .secondary-btn,
+    .danger-btn,
+    .ghost-btn {
+      min-height: 44px;
+      border: 0;
+      border-radius: 12px;
+      padding: 11px 14px;
+      font-size: 15px;
+      font-weight: 850;
+    }
+
+    .primary-btn {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .secondary-btn {
+      background: var(--blue);
+      color: #fff;
+    }
+
+    .danger-btn {
+      background: #ffebee;
+      color: var(--danger);
+    }
+
+    .ghost-btn {
+      background: #eef4ef;
+      color: #405843;
+    }
+
+    .full-btn {
+      width: 100%;
+      margin-top: 10px;
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      display: none;
+      flex-direction: column;
+      justify-content: flex-end;
+      background: rgba(0, 0, 0, 0.48);
+    }
+
+    .modal.open {
+      display: flex;
+    }
+
+    .modal-content {
+      width: 100%;
+      max-width: 1000px;
+      max-height: 88vh;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      background: #fff;
+      border-radius: 20px 20px 0 0;
+      overflow: hidden;
+    }
+
+    .modal-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 16px 18px;
+      border-bottom: 1px solid #edf2ee;
+    }
+
+    .modal-head h2 {
+      margin: 0;
+      font-size: 19px;
+      color: var(--primary-dark);
+    }
+
+    .close-btn {
+      width: 38px;
+      height: 38px;
+      border: 0;
+      border-radius: 50%;
+      background: #eef4ef;
+      color: #455847;
+      font-size: 22px;
+      line-height: 1;
+    }
+
+    .scroll-area {
+      overflow-y: auto;
+      padding: 16px;
+      touch-action: pan-y;
+    }
+
+    .cart-list {
+      display: grid;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+
+    .cart-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 9px 0;
+      border-bottom: 1px dashed #dce7de;
+      font-size: 15px;
+    }
+
+    .cart-row b {
+      white-space: nowrap;
+      color: var(--primary-dark);
+    }
+
+    .form-panel {
+      margin-bottom: 14px;
+      padding: 14px;
+      border: 1px solid #e2ece3;
+      border-radius: 12px;
+      background: #fbfdfb;
+    }
+
+    .form-title {
+      margin: 0 0 10px;
+      color: var(--primary-dark);
+      font-size: 16px;
+      font-weight: 850;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 9px;
+    }
+
+    @media (min-width: 720px) {
+      .form-grid.two {
+        grid-template-columns: 1.5fr 0.7fr;
+      }
+
+      .form-grid.item {
+        grid-template-columns: 1fr 1.5fr 0.7fr 0.7fr;
+      }
+    }
+
+    .form-control {
+      width: 100%;
+      min-height: 44px;
+      border: 1px solid #cfded1;
+      border-radius: 10px;
+      padding: 10px 12px;
+      outline: 0;
+      background: #fff;
+      color: var(--text);
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .form-control:focus {
+      border-color: #81c784;
+      box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.14);
+    }
+
+    .button-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 9px;
+      margin-top: 10px;
+    }
+
+    .manage-tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .manage-tab {
+      min-height: 42px;
+      border: 1px solid #d8e7da;
+      border-radius: 10px;
+      background: #fff;
+      color: #5b665d;
+      font-weight: 850;
+    }
+
+    .manage-tab.active {
+      border-color: var(--primary);
+      background: #e8f5e9;
+      color: var(--primary-dark);
+    }
+
+    .manage-section {
+      display: none;
+    }
+
+    .manage-section.active {
+      display: block;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid #e1ebe2;
+      border-radius: 10px;
+      background: #fff;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    th,
+    td {
+      padding: 10px;
+      border-bottom: 1px solid #edf2ee;
+      text-align: left;
+      vertical-align: middle;
+    }
+
+    th {
+      background: #f1f7f2;
+      color: #536256;
+      font-weight: 850;
+    }
+
+    td.actions {
+      width: 116px;
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .tiny-btn {
+      width: 36px;
+      height: 36px;
+      border: 0;
+      border-radius: 8px;
+      background: #eef4ef;
+      color: #455847;
+      font-weight: 850;
+      margin-left: 4px;
+    }
+
+    .tiny-btn.edit {
+      color: var(--blue);
+    }
+
+    .tiny-btn.delete {
+      color: var(--danger);
+    }
+
+    .empty-state {
+      padding: 28px 12px;
+      text-align: center;
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    .loader {
+      position: fixed;
+      inset: 0;
+      z-index: 999;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.38);
+      color: #fff;
+      text-align: center;
+      font-size: 18px;
+      font-weight: 850;
+    }
+
+    .loader.open {
+      display: flex;
+    }
+  </style>
+</head>
+<body>
+  <div class="loader" id="loader">กำลังโหลด...</div>
+
+  <header>
+    <div class="brand">BOY | สั่งของ</div>
+    <div class="header-actions">
+      <button class="icon-btn" id="refresh-btn" type="button" title="อัปเดตรายการ" onclick="window.refreshData()">↻</button>
+      <button class="icon-btn" type="button" title="ตั้งค่า" onclick="window.openSettings()">⚙</button>
+    </div>
+  </header>
+
+  <div class="status-strip">
+    <div>รายการ <strong id="item-count">0</strong></div>
+    <div id="sync-status">ยังไม่ได้โหลด</div>
+  </div>
+
+  <main class="main">
+    <div id="category-nav" class="sticky-cat-nav"></div>
+    <div id="order-container"></div>
+  </main>
+
+  <div class="cart-bar">
+    <div class="total">รวม: <span id="total-qty">0</span></div>
+    <button class="primary-btn" type="button" onclick="window.openCart()">ดูสรุป</button>
+  </div>
+
+  <div class="modal" id="cart-modal">
+    <div class="modal-content">
+      <div class="modal-head">
+        <h2>สรุปรายการ</h2>
+        <button class="close-btn" type="button" onclick="window.closeModal('cart-modal')">×</button>
+      </div>
+      <div class="scroll-area">
+        <div id="cart-list" class="cart-list"></div>
+        <button class="secondary-btn full-btn" type="button" onclick="window.copyOrderText()">คัดลอก</button>
+        <button class="danger-btn full-btn" type="button" onclick="window.clearCart()">ล้างข้อมูล</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal" id="settings-modal">
+    <div class="modal-content">
+      <div class="modal-head">
+        <h2>ตั้งค่า</h2>
+        <button class="close-btn" type="button" onclick="window.closeModal('settings-modal')">×</button>
+      </div>
+      <div class="scroll-area">
+        <div class="manage-tabs">
+          <button id="tab-category" class="manage-tab active" type="button" onclick="window.switchManageTab('category')">ประเภท</button>
+          <button id="tab-item" class="manage-tab" type="button" onclick="window.switchManageTab('item')">รายการ</button>
+        </div>
+
+        <section id="manage-category" class="manage-section active">
+          <div class="form-panel">
+            <h3 class="form-title" id="category-form-title">เพิ่มประเภท</h3>
+            <div class="form-grid two">
+              <input id="category-name" class="form-control" type="text" placeholder="ชื่อประเภท">
+              <input id="category-order" class="form-control" type="number" inputmode="numeric" placeholder="ลำดับ">
+            </div>
+            <div class="button-row">
+              <button class="primary-btn" type="button" onclick="window.saveCategory()">บันทึก</button>
+              <button class="ghost-btn" type="button" onclick="window.resetCategoryForm()">ยกเลิก</button>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>ประเภท</th>
+                  <th style="width:76px;">ลำดับ</th>
+                  <th style="width:116px;"></th>
+                </tr>
+              </thead>
+              <tbody id="category-table"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="manage-item" class="manage-section">
+          <div class="form-panel">
+            <h3 class="form-title" id="item-form-title">เพิ่มรายการ</h3>
+            <div class="form-grid item">
+              <select id="item-category" class="form-control"></select>
+              <input id="item-name" class="form-control" type="text" placeholder="ชื่อรายการ">
+              <input id="item-unit" class="form-control" type="text" placeholder="หน่วย">
+              <input id="item-order" class="form-control" type="number" inputmode="numeric" placeholder="ลำดับ">
+            </div>
+            <div class="button-row">
+              <button class="primary-btn" type="button" onclick="window.saveItem()">บันทึก</button>
+              <button class="ghost-btn" type="button" onclick="window.resetItemForm()">ยกเลิก</button>
+            </div>
+          </div>
+          <input id="item-search" class="form-control" type="text" placeholder="ค้นหารายการ" oninput="window.renderSettings()">
+          <div class="table-wrap" style="margin-top:10px;">
+            <table>
+              <thead>
+                <tr>
+                  <th>รายการ</th>
+                  <th>ประเภท</th>
+                  <th style="width:68px;">หน่วย</th>
+                  <th style="width:116px;"></th>
+                </tr>
+              </thead>
+              <tbody id="item-table"></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = "https://script.google.com/macros/s/AKfycbwLNcIbQzC30EhRAQQM2e7_WQysgepfPnyadJ6D5T5wE_eMhGPU9JKl_teDfPu7he6Z/exec";
+    const CACHE_KEY = "tawana_order_master_v1";
+    const CART_KEY = "tawana_order_cart_v1";
+
+    const state = {
+      categories: [],
+      items: [],
+      cart: {},
+      editingCategory: null,
+      editingItem: null,
+      activeManageTab: "category",
+      loadedAt: ""
+    };
+
+    function safeJsonParse(value, fallback) {
+      try {
+        return value ? JSON.parse(value) : fallback;
+      } catch (error) {
+        return fallback;
+      }
+    }
+
+    function saveLocal(key, value) {
+      try {
+        localStorage.setItem(key, JSON.stringify(value));
+      } catch (error) {
+        console.log("localStorage skipped", error);
+      }
+    }
+
+    function readLocal(key, fallback) {
+      try {
+        return safeJsonParse(localStorage.getItem(key), fallback);
+      } catch (error) {
+        return fallback;
+      }
+    }
+
+    function cleanText(value) {
+      return String(value ?? "").trim();
+    }
+
+    function toNumber(value) {
+      const number = Number(value);
+      return Number.isFinite(number) ? number : 0;
+    }
+
+    function formatQty(value) {
+      const number = toNumber(value);
+      if (Number.isInteger(number)) return String(number);
+      return String(Number(number.toFixed(2)));
+    }
+
+    function showLoader(text) {
+      const loader = document.getElementById("loader");
+      loader.textContent = text || "กำลังโหลด...";
+      loader.classList.add("open");
+    }
+
+    function hideLoader() {
+      document.getElementById("loader").classList.remove("open");
+    }
+
+    async function apiCall(action, payload = {}) {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 30000);
+      try {
+        const response = await fetch(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({ action, payload }),
+          signal: controller.signal
+        });
+        const text = await response.text();
+        let data;
+        try {
+          data = JSON.parse(text);
+        } catch (error) {
+          throw new Error("หลังบ้านตอบกลับผิดปกติ");
+        }
+        if (!response.ok) throw new Error(data.message || `HTTP ${response.status}`);
+        if (String(data.status || "").toLowerCase() === "error") {
+          throw new Error(data.message || "ทำรายการไม่สำเร็จ");
+        }
+        return data;
+      } finally {
+        clearTimeout(timeout);
+      }
+    }
+
+    function applyData(data, options = {}) {
+      const incoming = data || {};
+      state.categories = Array.isArray(incoming.categories) ? incoming.categories.slice() : [];
+      state.items = Array.isArray(incoming.items) ? incoming.items.slice() : [];
+      state.categories.sort((a, b) => toNumber(a.sortOrder) - toNumber(b.sortOrder) || cleanText(a.categoryName).localeCompare(cleanText(b.categoryName), "th"));
+      state.items.sort((a, b) => toNumber(a.sortOrder) - toNumber(b.sortOrder) || cleanText(a.itemName).localeCompare(cleanText(b.itemName), "th"));
+      if (options.loadedAt) state.loadedAt = options.loadedAt;
+      if (options.persist !== false) {
+        saveLocal(CACHE_KEY, { data: { categories: state.categories, items: state.items }, loadedAt: state.loadedAt });
+      }
+      trimCartToExistingItems();
+      renderAll();
+    }
+
+    function trimCartToExistingItems() {
+      const valid = new Set(state.items.map(item => item.itemId));
+      Object.keys(state.cart).forEach(itemId => {
+        if (!valid.has(itemId) || toNumber(state.cart[itemId]) <= 0) delete state.cart[itemId];
+      });
+      saveLocal(CART_KEY, state.cart);
+    }
+
+    function getItemsByCategory(categoryId) {
+      return state.items.filter(item => item.categoryId === categoryId);
+    }
+
+    function findItem(itemId) {
+      return state.items.find(item => item.itemId === itemId);
+    }
+
+    function renderAll() {
+      renderStatus();
+      renderOrder();
+      renderTotal();
+      renderSettings();
+    }
+
+    function renderStatus() {
+      document.getElementById("item-count").textContent = state.items.length;
+      const status = state.loadedAt ? `อัปเดต ${new Date(state.loadedAt).toLocaleString("th-TH", { timeZone: "Asia/Bangkok" })}` : "ใช้ข้อมูลในเครื่อง";
+      document.getElementById("sync-status").textContent = status;
+    }
+
+    function renderOrder() {
+      const nav = document.getElementById("category-nav");
+      const container = document.getElementById("order-container");
+      nav.innerHTML = "";
+      container.innerHTML = "";
+
+      const visibleCategories = state.categories.filter(category => getItemsByCategory(category.categoryId).length > 0);
+      if (visibleCategories.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "empty-state";
+        empty.textContent = "ยังไม่มีรายการ";
+        container.appendChild(empty);
+        return;
+      }
+
+      visibleCategories.forEach((category, index) => {
+        const navButton = document.createElement("button");
+        navButton.type = "button";
+        navButton.className = "cat-nav-btn";
+        navButton.textContent = category.categoryName;
+        navButton.onclick = () => document.getElementById(`category-${index}`).scrollIntoView({ behavior: "smooth", block: "start" });
+        nav.appendChild(navButton);
+
+        const title = document.createElement("div");
+        title.className = "category-title";
+        title.id = `category-${index}`;
+        title.textContent = category.categoryName;
+        container.appendChild(title);
+
+        const grid = document.createElement("div");
+        grid.className = "grid";
+        getItemsByCategory(category.categoryId).forEach(item => grid.appendChild(createProductCard(item)));
+        container.appendChild(grid);
+      });
+    }
+
+    function createProductCard(item) {
+      const card = document.createElement("div");
+      card.className = "product-card";
+
+      const name = document.createElement("div");
+      name.className = "product-name";
+      const itemName = document.createElement("span");
+      itemName.textContent = item.itemName;
+      name.appendChild(itemName);
+      if (item.unit) {
+        const unit = document.createElement("span");
+        unit.className = "product-unit";
+        unit.textContent = item.unit;
+        name.appendChild(unit);
+      }
+      card.appendChild(name);
+
+      const controls = document.createElement("div");
+      controls.className = "controls";
+
+      const minus = document.createElement("button");
+      minus.type = "button";
+      minus.className = "qty-btn";
+      minus.textContent = "-";
+      minus.onclick = () => changeQty(item.itemId, -1);
+
+      const input = document.createElement("input");
+      input.className = "qty-input";
+      input.type = "number";
+      input.inputMode = "decimal";
+      input.min = "0";
+      input.step = "any";
+      input.value = state.cart[item.itemId] ? formatQty(state.cart[item.itemId]) : "";
+      input.oninput = () => setQty(item.itemId, input.value);
+
+      const plus = document.createElement("button");
+      plus.type = "button";
+      plus.className = "qty-btn plus";
+      plus.textContent = "+";
+      plus.onclick = () => changeQty(item.itemId, 1);
+
+      controls.append(minus, input, plus);
+      card.appendChild(controls);
+      return card;
+    }
+
+    function setQty(itemId, value) {
+      const qty = Math.max(0, toNumber(value));
+      if (qty > 0) state.cart[itemId] = qty;
+      else delete state.cart[itemId];
+      saveLocal(CART_KEY, state.cart);
+      renderTotal();
+    }
+
+    function changeQty(itemId, diff) {
+      const next = Math.max(0, toNumber(state.cart[itemId]) + diff);
+      setQty(itemId, next);
+      renderOrder();
+    }
+
+    function renderTotal() {
+      const total = Object.values(state.cart).reduce((sum, qty) => sum + toNumber(qty), 0);
+      document.getElementById("total-qty").textContent = formatQty(total);
+    }
+
+    function selectedLinesByCategory() {
+      return state.categories.map(category => {
+        const lines = getItemsByCategory(category.categoryId)
+          .filter(item => toNumber(state.cart[item.itemId]) > 0)
+          .map(item => ({ item, qty: toNumber(state.cart[item.itemId]) }));
+        return { category, lines };
+      }).filter(group => group.lines.length > 0);
+    }
+
+    function renderCart() {
+      const list = document.getElementById("cart-list");
+      list.innerHTML = "";
+      const groups = selectedLinesByCategory();
+      if (groups.length === 0) {
+        const empty = document.createElement("div");
+        empty.className = "empty-state";
+        empty.textContent = "ยังไม่มีรายการ";
+        list.appendChild(empty);
+        return;
+      }
+
+      groups.forEach(group => {
+        const title = document.createElement("div");
+        title.className = "category-title";
+        title.style.marginTop = "10px";
+        title.textContent = group.category.categoryName;
+        list.appendChild(title);
+        group.lines.forEach(({ item, qty }) => {
+          const row = document.createElement("div");
+          row.className = "cart-row";
+          const name = document.createElement("span");
+          name.textContent = item.itemName;
+          const amount = document.createElement("b");
+          amount.textContent = `${formatQty(qty)}${item.unit ? " " + item.unit : ""}`;
+          row.append(name, amount);
+          list.appendChild(row);
+        });
+      });
+    }
+
+    function buildOrderText() {
+      const date = new Date().toLocaleDateString("th-TH", { timeZone: "Asia/Bangkok" });
+      const groups = selectedLinesByCategory();
+      let text = `รายการสั่งของ BOY Juice (${date})\n`;
+      groups.forEach(group => {
+        text += `\n${group.category.categoryName}\n`;
+        group.lines.forEach(({ item, qty }) => {
+          text += `- ${item.itemName} x ${formatQty(qty)}${item.unit ? " " + item.unit : ""}\n`;
+        });
+      });
+      return groups.length > 0 ? text : "";
+    }
+
+    async function copyToClipboard(text) {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        return;
+      }
+      const textarea = document.createElement("textarea");
+      textarea.value = text;
+      textarea.style.position = "fixed";
+      textarea.style.opacity = "0";
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      document.execCommand("copy");
+      textarea.remove();
+    }
+
+    window.copyOrderText = async function () {
+      const text = buildOrderText();
+      if (!text) return alert("ยังไม่มีรายการ");
+      await copyToClipboard(text);
+      alert("คัดลอกแล้ว");
+    };
+
+    window.clearCart = function () {
+      if (!confirm("ล้างข้อมูลทั้งหมด?")) return;
+      state.cart = {};
+      saveLocal(CART_KEY, state.cart);
+      renderAll();
+      renderCart();
+    };
+
+    window.openCart = function () {
+      renderCart();
+      document.getElementById("cart-modal").classList.add("open");
+    };
+
+    window.openSettings = function () {
+      renderSettings();
+      document.getElementById("settings-modal").classList.add("open");
+    };
+
+    window.closeModal = function (id) {
+      document.getElementById(id).classList.remove("open");
+    };
+
+    window.switchManageTab = function (tab) {
+      state.activeManageTab = tab;
+      document.querySelectorAll(".manage-tab").forEach(button => button.classList.remove("active"));
+      document.querySelectorAll(".manage-section").forEach(section => section.classList.remove("active"));
+      document.getElementById(`tab-${tab}`).classList.add("active");
+      document.getElementById(`manage-${tab}`).classList.add("active");
+    };
+
+    function renderSettings() {
+      renderCategoryOptions();
+      renderCategoryTable();
+      renderItemTable();
+      window.switchManageTab(state.activeManageTab);
+    }
+
+    function renderCategoryOptions() {
+      const select = document.getElementById("item-category");
+      if (!select) return;
+      const selected = select.value;
+      select.innerHTML = "";
+      state.categories.forEach(category => {
+        const option = document.createElement("option");
+        option.value = category.categoryId;
+        option.textContent = category.categoryName;
+        select.appendChild(option);
+      });
+      if (selected) select.value = selected;
+    }
+
+    function renderCategoryTable() {
+      const tbody = document.getElementById("category-table");
+      tbody.innerHTML = "";
+      state.categories.forEach(category => {
+        const row = document.createElement("tr");
+        row.appendChild(tableCell(category.categoryName));
+        row.appendChild(tableCell(formatQty(category.sortOrder || "")));
+        const actions = document.createElement("td");
+        actions.className = "actions";
+        actions.append(
+          actionButton("แก้", "edit", () => editCategory(category.categoryId)),
+          actionButton("ลบ", "delete", () => deleteCategory(category.categoryId))
+        );
+        row.appendChild(actions);
+        tbody.appendChild(row);
+      });
+    }
+
+    function renderItemTable() {
+      const tbody = document.getElementById("item-table");
+      const search = cleanText(document.getElementById("item-search")?.value).toLowerCase();
+      tbody.innerHTML = "";
+      state.items
+        .filter(item => !search || `${item.itemName} ${item.categoryName} ${item.unit}`.toLowerCase().includes(search))
+        .forEach(item => {
+          const row = document.createElement("tr");
+          row.appendChild(tableCell(item.itemName));
+          row.appendChild(tableCell(item.categoryName));
+          row.appendChild(tableCell(item.unit || ""));
+          const actions = document.createElement("td");
+          actions.className = "actions";
+          actions.append(
+            actionButton("แก้", "edit", () => editItem(item.itemId)),
+            actionButton("ลบ", "delete", () => deleteItem(item.itemId))
+          );
+          row.appendChild(actions);
+          tbody.appendChild(row);
+        });
+    }
+
+    function tableCell(text) {
+      const cell = document.createElement("td");
+      cell.textContent = text;
+      return cell;
+    }
+
+    function actionButton(text, variant, handler) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = `tiny-btn ${variant}`;
+      button.textContent = text;
+      button.onclick = handler;
+      return button;
+    }
+
+    function editCategory(categoryId) {
+      const category = state.categories.find(item => item.categoryId === categoryId);
+      if (!category) return;
+      state.editingCategory = category;
+      document.getElementById("category-form-title").textContent = "แก้ไขประเภท";
+      document.getElementById("category-name").value = category.categoryName;
+      document.getElementById("category-order").value = category.sortOrder || "";
+      document.getElementById("category-name").focus();
+    }
+
+    async function deleteCategory(categoryId) {
+      const category = state.categories.find(item => item.categoryId === categoryId);
+      if (!category || !confirm(`ลบประเภท "${category.categoryName}"?`)) return;
+      await saveToBackend("order_deleteCategory", { categoryId });
+    }
+
+    window.resetCategoryForm = function () {
+      state.editingCategory = null;
+      document.getElementById("category-form-title").textContent = "เพิ่มประเภท";
+      document.getElementById("category-name").value = "";
+      document.getElementById("category-order").value = "";
+    };
+
+    window.saveCategory = async function () {
+      const payload = {
+        categoryId: state.editingCategory?.categoryId || "",
+        categoryName: cleanText(document.getElementById("category-name").value),
+        sortOrder: cleanText(document.getElementById("category-order").value)
+      };
+      if (!payload.categoryName) return alert("กรุณากรอกชื่อประเภท");
+      await saveToBackend("order_saveCategory", payload);
+      window.resetCategoryForm();
+    };
+
+    function editItem(itemId) {
+      const item = findItem(itemId);
+      if (!item) return;
+      state.editingItem = item;
+      document.getElementById("item-form-title").textContent = "แก้ไขรายการ";
+      document.getElementById("item-category").value = item.categoryId;
+      document.getElementById("item-name").value = item.itemName;
+      document.getElementById("item-unit").value = item.unit || "";
+      document.getElementById("item-order").value = item.sortOrder || "";
+      document.getElementById("item-name").focus();
+    }
+
+    async function deleteItem(itemId) {
+      const item = findItem(itemId);
+      if (!item || !confirm(`ลบรายการ "${item.itemName}"?`)) return;
+      await saveToBackend("order_deleteItem", { itemId });
+    }
+
+    window.resetItemForm = function () {
+      state.editingItem = null;
+      document.getElementById("item-form-title").textContent = "เพิ่มรายการ";
+      document.getElementById("item-name").value = "";
+      document.getElementById("item-unit").value = "";
+      document.getElementById("item-order").value = "";
+    };
+
+    window.saveItem = async function () {
+      const categoryId = document.getElementById("item-category").value;
+      const category = state.categories.find(item => item.categoryId === categoryId);
+      const payload = {
+        itemId: state.editingItem?.itemId || "",
+        categoryId,
+        categoryName: category?.categoryName || "",
+        itemName: cleanText(document.getElementById("item-name").value),
+        unit: cleanText(document.getElementById("item-unit").value),
+        sortOrder: cleanText(document.getElementById("item-order").value)
+      };
+      if (!payload.categoryId) return alert("กรุณาเลือกประเภท");
+      if (!payload.itemName) return alert("กรุณากรอกชื่อรายการ");
+      await saveToBackend("order_saveItem", payload);
+      window.resetItemForm();
+    };
+
+    async function saveToBackend(action, payload) {
+      try {
+        showLoader("กำลังบันทึก...");
+        const result = await apiCall(action, payload);
+        applyData(result.data, { loadedAt: result.loadedAt || new Date().toISOString() });
+      } catch (error) {
+        alert(error.message || String(error));
+      } finally {
+        hideLoader();
+      }
+    }
+
+    window.refreshData = async function () {
+      const button = document.getElementById("refresh-btn");
+      button.disabled = true;
+      try {
+        showLoader("กำลังอัปเดตรายการ...");
+        const result = await apiCall("order_getData");
+        applyData(result.data, { loadedAt: result.loadedAt || new Date().toISOString() });
+      } catch (error) {
+        alert("โหลดรายการไม่สำเร็จ: " + (error.message || String(error)));
+      } finally {
+        button.disabled = false;
+        hideLoader();
+      }
+    };
+
+    function init() {
+      state.cart = readLocal(CART_KEY, {});
+      const cached = readLocal(CACHE_KEY, null);
+      if (cached?.data?.items?.length) {
+        applyData(cached.data, { loadedAt: cached.loadedAt || "", persist: false });
+      } else {
+        renderAll();
+        window.refreshData();
+      }
+    }
+
+    init();
+  </script>
+</body>
+</html>

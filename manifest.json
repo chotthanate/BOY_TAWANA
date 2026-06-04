@@ -1,14 +1,14 @@
 {
-  "name": "BOY Juice Order",
-  "short_name": "BOY Order",
-  "description": "ระบบสั่งของ BOY Juice",
-  "id": "/TAWANA_ACC/order.html",
-  "start_url": "/TAWANA_ACC/order.html",
+  "name": "BOY Juice POS & HR",
+  "short_name": "BOY POS",
+  "description": "ระบบบันทึกบัญชีและจัดการพนักงาน BOY Juice",
+  "id": "/TAWANA_ACC/",
+  "start_url": "/TAWANA_ACC/index.html",
   "scope": "/TAWANA_ACC/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#f4f9f4",
-  "theme_color": "#4caf50",
+  "background_color": "#f2f2f7",
+  "theme_color": "#2ecc71",
   "icons": [
     {
       "src": "assets/icons/icon-192.png",

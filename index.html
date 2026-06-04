@@ -1,14 +1,28 @@
 ﻿<!DOCTYPE html>
-<html>
+<html lang="th">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#2ecc71">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="BOY POS">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="assets/icons/favicon-16.png">
   <title>BOY Juice POS & HR</title>
   <style>
     *, *::before, *::after { box-sizing: border-box !important; }
     :root { --primary: #2ecc71; --bg: #f2f2f7; --danger: #ff3b30; }
+    html { min-height: 100%; background: var(--bg); }
     html, body { overflow-x: hidden; max-width: 100%; touch-action: pan-y; }
-    body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; padding: 10px; padding-bottom: 120px; }
+    body { font-family: -apple-system, sans-serif; background: var(--bg); margin: 0; min-height: 100vh; padding: max(10px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right)) calc(120px + env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left)); }
+    @supports (min-height: 100dvh) { body { min-height: 100dvh; } }
+    @media (display-mode: standalone), (display-mode: fullscreen) {
+      html, body { width: 100%; min-width: 100%; }
+    }
     
     .card { background: white; padding: 15px; border-radius: 18px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 12px; width: 100%; position: relative; }
     h3 { margin: 0 0 10px 0; font-size: 1rem; color: #333; border-left: 4px solid var(--primary); padding-left: 8px; }
@@ -35,8 +49,8 @@
     .delete-action { min-width: 75px; margin-left: 8px; background: var(--danger); color: white; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.9rem; scroll-snap-align: end; cursor: pointer; }
     
     .btn-main { width: 100%; padding: 15px; border-radius: 14px; font-size: 1rem; font-weight: bold; border: none; margin-top: 10px; cursor: pointer; }
-    .btn-submit { background: var(--primary); color: white; position: fixed; bottom: 15px; left: 10px; width: calc(50% - 15px); box-shadow: 0 4px 15px rgba(0,0,0,0.2); z-index: 999; }
-    .btn-hr { background: #007aff; color: white; position: fixed; bottom: 15px; right: 10px; width: calc(50% - 15px); box-shadow: 0 4px 15px rgba(0,0,0,0.2); z-index: 999; }
+    .btn-submit { background: var(--primary); color: white; position: fixed; bottom: calc(15px + env(safe-area-inset-bottom)); left: max(10px, env(safe-area-inset-left)); width: calc(50% - 15px); box-shadow: 0 4px 15px rgba(0,0,0,0.2); z-index: 999; }
+    .btn-hr { background: #007aff; color: white; position: fixed; bottom: calc(15px + env(safe-area-inset-bottom)); right: max(10px, env(safe-area-inset-right)); width: calc(50% - 15px); box-shadow: 0 4px 15px rgba(0,0,0,0.2); z-index: 999; }
     
     .autocomplete-items { position: absolute; z-index: 10005 !important; background-color: #fff; border: 1px solid #ccc; border-radius: 12px; max-height: 250px; overflow-y: auto; box-shadow: 0 8px 24px rgba(0,0,0,0.2); }
     .autocomplete-items div { padding: 14px; cursor: pointer; border-bottom: 1px solid #eee; font-size: 16px; color: #333; }

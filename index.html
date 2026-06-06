@@ -503,7 +503,36 @@
       document.getElementById('loadingOverlay').classList.add('hidden');
     }
 
+    function parseSharedItemName(displayName) {
+      var text = String(displayName || '').trim();
+      var match = text.match(/^(.*)\s+\(([^()]*)\)$/);
+      if (!match) return { name: text, unit: '' };
+      return { name: match[1].trim(), unit: match[2].trim() };
+    }
+
+    function applyItemDict(formattedDict) {
+      if (!formattedDict || Object.keys(formattedDict).length === 0) return false;
+      localStorage.setItem('BOY_JUICE_ITEMS', JSON.stringify(formattedDict));
+      itemDict = formattedDict;
+      return true;
+    }
+
     async function pullItems() {
+      try {
+        const sharedData = await apiCall('shared_loadDB');
+        const categories = sharedData && sharedData.database && sharedData.database.categories;
+        if (categories) {
+          var sharedDict = {};
+          Object.keys(categories).forEach(function(category) {
+            (categories[category] || []).forEach(function(displayName) {
+              var parsed = parseSharedItemName(displayName);
+              if (parsed.name) sharedDict[parsed.name] = parsed.unit;
+            });
+          });
+          if (applyItemDict(sharedDict)) return;
+        }
+      } catch(e) { console.log("Shared Items Error", e); }
+
       try {
         const rawData = await apiCall('pullItems');
         if (rawData) {
@@ -511,8 +540,7 @@
           if (Array.isArray(rawData)) {
             rawData.forEach(function(item) { formattedDict[item.n] = item.u; });
           } else { formattedDict = rawData; }
-          localStorage.setItem('BOY_JUICE_ITEMS', JSON.stringify(formattedDict));
-          itemDict = formattedDict;
+          applyItemDict(formattedDict);
         }
       } catch(e) { console.log("Pull Items Error", e); }
     }
@@ -522,7 +550,8 @@
       appStarted = true;
       
       var savedItems = localStorage.getItem('BOY_JUICE_ITEMS');
-      if (savedItems) { itemDict = JSON.parse(savedItems); } else { pullItems(); }
+      if (savedItems) { itemDict = JSON.parse(savedItems); }
+      pullItems();
 
       var savedStaff = localStorage.getItem('BOY_STAFF');
       if (savedStaff) { staffList = JSON.parse(savedStaff); }

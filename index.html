@@ -206,6 +206,9 @@
     var timer;
     var appStarted = false;
     var itemDict = {}; 
+    var itemMetaDict = {};
+    var isLoadingData = false;
+    var loadDataSeq = 0;
     var staffList = ["ปู", "นัน", "สั้น", "หยก", "หน่อย", "ปา", "โดนัท"]; 
     var currentSalaryData = [];
     var leaveRowCounter = 0; // ตัวนับบรรทัดของกล่องการลา
@@ -396,8 +399,8 @@
       });
     }
 
-    async function refreshSavedLeaves() {
-      const date = document.getElementById('mainDate').value;
+    async function refreshSavedLeaves(targetDate) {
+      const date = targetDate || document.getElementById('mainDate').value;
       const list = document.getElementById('savedLeaveList');
       if (!list) return;
       if (!date) {
@@ -408,6 +411,7 @@
       try {
         const res = await apiCall('getLeavesByDate', { date: date });
         if (res.status === 'error') throw new Error(res.message || 'โหลดรายการลาไม่สำเร็จ');
+        if (targetDate && document.getElementById('mainDate').value !== targetDate) return;
         renderSavedLeaves(res.leaves || []);
       } catch (e) {
         list.className = 'saved-leave-empty';
@@ -510,11 +514,30 @@
       return { name: match[1].trim(), unit: match[2].trim() };
     }
 
-    function applyItemDict(formattedDict) {
+    function applyItemDict(formattedDict, metaDict) {
       if (!formattedDict || Object.keys(formattedDict).length === 0) return false;
       localStorage.setItem('BOY_JUICE_ITEMS', JSON.stringify(formattedDict));
       itemDict = formattedDict;
+      if (metaDict !== undefined) {
+        itemMetaDict = metaDict || {};
+        localStorage.setItem('BOY_JUICE_ITEM_META', JSON.stringify(itemMetaDict));
+      }
       return true;
+    }
+
+    function setItemMeta(metaDict, name, unit, mainType, subType) {
+      var cleanName = String(name || '').trim();
+      var cleanUnit = String(unit || '').trim();
+      if (!cleanName) return;
+      var meta = { mainType: String(mainType || '').trim(), subType: String(subType || '').trim(), unit: cleanUnit };
+      metaDict[cleanName] = meta;
+      metaDict[cleanName + '||' + cleanUnit] = meta;
+    }
+
+    function getExpenseMeta(name, unit) {
+      var cleanName = String(name || '').trim();
+      var cleanUnit = String(unit || '').trim();
+      return itemMetaDict[cleanName + '||' + cleanUnit] || itemMetaDict[cleanName] || {};
     }
 
     async function pullItems() {
@@ -523,13 +546,17 @@
         const categories = sharedData && sharedData.database && sharedData.database.categories;
         if (categories) {
           var sharedDict = {};
+          var sharedMeta = {};
+          var itemMeta = sharedData.database.itemMeta || {};
           Object.keys(categories).forEach(function(category) {
             (categories[category] || []).forEach(function(displayName) {
               var parsed = parseSharedItemName(displayName);
               if (parsed.name) sharedDict[parsed.name] = parsed.unit;
+              var meta = itemMeta[displayName] || itemMeta[parsed.name] || {};
+              setItemMeta(sharedMeta, parsed.name, parsed.unit, meta.mainType, meta.subType);
             });
           });
-          if (applyItemDict(sharedDict)) return;
+          if (applyItemDict(sharedDict, sharedMeta)) return;
         }
       } catch(e) { console.log("Shared Items Error", e); }
 
@@ -540,7 +567,7 @@
           if (Array.isArray(rawData)) {
             rawData.forEach(function(item) { formattedDict[item.n] = item.u; });
           } else { formattedDict = rawData; }
-          applyItemDict(formattedDict);
+          applyItemDict(formattedDict, {});
         }
       } catch(e) { console.log("Pull Items Error", e); }
     }
@@ -551,6 +578,8 @@
       
       var savedItems = localStorage.getItem('BOY_JUICE_ITEMS');
       if (savedItems) { itemDict = JSON.parse(savedItems); }
+      var savedMeta = localStorage.getItem('BOY_JUICE_ITEM_META');
+      if (savedMeta) { itemMetaDict = JSON.parse(savedMeta); }
       pullItems();
 
       var savedStaff = localStorage.getItem('BOY_STAFF');
@@ -650,24 +679,39 @@
       if(lDate) { document.getElementById('mainDate').value = lDate; document.getElementById('lockedOverlay').classList.add('hidden'); loadData(); }
     }
 
-    async function submitToSheet() {
-      var date = document.getElementById('mainDate').value;
-      if(!date) return alert("กรุณาระบุวันที่");
-      document.getElementById('loadingOverlay').classList.remove('hidden');
+    function collectFormDataSnapshot() {
       var exp = [];
       var wrappers = document.querySelectorAll('.swipe-wrapper');
       for(var w=0; w<wrappers.length; w++) {
         var ins = wrappers[w].querySelectorAll('.exp-row input:not([type="hidden"])');
         if (ins[0].value || ins[1].value || ins[2].value || ins[3].value) {
-          exp.push({ i: ins[0].value, q: ins[1].value, u: ins[2].value, p: ins[3].value });
+          var itemName = ins[0].value.trim();
+          var unit = ins[2].value.trim();
+          var meta = getExpenseMeta(itemName, unit);
+          exp.push({
+            i: ins[0].value,
+            q: ins[1].value,
+            u: ins[2].value,
+            p: ins[3].value,
+            m: meta.mainType || '',
+            t: meta.subType || ''
+          });
         }
       }
-      var data = {
+      return {
         cash: { v: document.getElementById('val-cash').value, s: true },
         transfer: { v: document.getElementById('val-transfer').value, s: true },
         other: { v: document.getElementById('otherIncomeVal').value, n: document.getElementById('otherIncomeNote').value },
         exp: exp
       };
+    }
+
+    async function submitToSheet() {
+      var date = document.getElementById('mainDate').value;
+      if(!date) return alert("กรุณาระบุวันที่");
+      clearTimeout(timer);
+      document.getElementById('loadingOverlay').classList.remove('hidden');
+      var data = collectFormDataSnapshot();
       try {
         const res = await apiCall('submit', { date: date, data: data });
         document.getElementById('loadingOverlay').classList.add('hidden');
@@ -713,22 +757,12 @@
     }
 
     function doSync() {
+      if (isLoadingData) return;
       clearTimeout(timer);
+      var date = document.getElementById('mainDate').value;
+      if(!date) return;
+      var data = collectFormDataSnapshot();
       timer = setTimeout(async function() {
-        var date = document.getElementById('mainDate').value;
-        if(!date) return;
-        var exp = [];
-        var wrappers = document.querySelectorAll('.swipe-wrapper');
-        for(var w=0; w<wrappers.length; w++) {
-          var ins = wrappers[w].querySelectorAll('.exp-row input:not([type="hidden"])');
-          if (ins[0].value || ins[1].value || ins[2].value || ins[3].value) { exp.push({ i: ins[0].value, q: ins[1].value, u: ins[2].value, p: ins[3].value }); }
-        }
-        var data = {
-          cash: { v: document.getElementById('val-cash').value, s: true },
-          transfer: { v: document.getElementById('val-transfer').value, s: true },
-          other: { v: document.getElementById('otherIncomeVal').value, n: document.getElementById('otherIncomeNote').value },
-          exp: exp
-        };
         apiCall('autoSave', { date: date, data: data });
       }, 500);
     }
@@ -736,18 +770,23 @@
     async function loadData() {
       var date = document.getElementById('mainDate').value;
       if(!date) return;
+      var requestId = ++loadDataSeq;
+      clearTimeout(timer);
+      isLoadingData = true;
       document.getElementById('loadingOverlay').classList.remove('hidden');
       var fruits = ['🍉', '🍍', '🍓', '🍊', '🍇'];
       document.getElementById('fruitIcon').innerText = fruits[Math.floor(Math.random() * fruits.length)];
 
       try {
         const parsed = await apiCall('loadData', { date: date });
+        if (requestId !== loadDataSeq || document.getElementById('mainDate').value !== date) return;
         var d = {}; try { d = JSON.parse(parsed.draft || '{}'); } catch(e) {}
         
         // ล้างข้อมูลหน้าจอและโหลดใหม่
         document.getElementById('expenseList').innerHTML = '';
         clearLeaveList(); // เคลียร์ช่องให้สะอาดทุกครั้งที่เปลี่ยนวัน
-        await refreshSavedLeaves();
+        await refreshSavedLeaves(date);
+        if (requestId !== loadDataSeq || document.getElementById('mainDate').value !== date) return;
 
         document.getElementById('val-cash').value = (d.cash) ? d.cash.v : '';
         document.getElementById('val-transfer').value = (d.transfer) ? d.transfer.v : '';
@@ -766,7 +805,12 @@
           document.getElementById('btnSubmit').style.display = 'block';
         }
       } catch (err) { alert("❌ ดึงข้อมูลไม่สำเร็จ สาเหตุ: " + err.message); }
-      document.getElementById('loadingOverlay').classList.add('hidden');
+      finally {
+        if (requestId === loadDataSeq) {
+          isLoadingData = false;
+          document.getElementById('loadingOverlay').classList.add('hidden');
+        }
+      }
     }
     
     window.onload = initApp;

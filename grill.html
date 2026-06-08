@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <title>ระบบบันทึกรายรับ-รายจ่าย</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <style>
+    :root {
+      --primary: #991B1B;
+      --primary-dark: #7F1D1D;
+      --primary-soft: #FFF1E7;
+      --bg-app: #2B2926;
+      --card-bg: #FFFDF8;
+      --text-main: #1F130F;
+      --text-muted: #7A6255;
+      --border-color: #EAD7C5;
+      --accent: #F97316;
+      --accent-dark: #C2410C;
+      --success: #15803D;
+      --danger: #DC2626;
+    }
+    body {
+      font-family: 'Kanit', sans-serif;
+      background-color: var(--bg-app);
+      background-image:
+        radial-gradient(circle at 12% 18%, rgba(255, 255, 255, 0.38) 0 1px, transparent 1.7px),
+        radial-gradient(circle at 78% 24%, rgba(255, 238, 213, 0.34) 0 1px, transparent 1.6px),
+        radial-gradient(circle at 48% 72%, rgba(255, 255, 255, 0.22) 0 1px, transparent 1.5px),
+        linear-gradient(145deg, #38332F 0%, #2D2A27 46%, #242322 100%);
+      background-size: 137px 137px, 211px 211px, 319px 319px, cover;
+      color: var(--text-main);
+      -webkit-user-select: none;
+      user-select: none;
+      overflow: hidden;
+      position: fixed;
+      width: 100%;
+      height: 100%;
+      padding: 0 !important;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(0, 0, 0, 0.18)),
+        repeating-linear-gradient(90deg, rgba(255,255,255,0.026) 0 1px, transparent 1px 7px);
+      opacity: 0.46;
+    }
+    .scroll-container {
+      height: 100%;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 1rem 1rem calc(116px + env(safe-area-inset-bottom));
+      position: relative;
+      z-index: 1;
+    }
+    .submit-dock {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 25;
+      padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom));
+      pointer-events: none;
+      background: linear-gradient(to top, rgba(43, 41, 38, 0.82), rgba(43, 41, 38, 0.28) 58%, rgba(43, 41, 38, 0));
+    }
+    .submit-dock-inner {
+      width: 100%;
+      max-width: 28rem;
+      margin: 0 auto;
+      pointer-events: auto;
+    }
+    .submit-button {
+      margin-bottom: 0 !important;
+      border: 1px solid rgba(255, 213, 181, 0.18);
+    }
+    .custom-card {
+      background-color: var(--card-bg);
+      border: 1px solid rgba(234, 215, 197, 0.92);
+      box-shadow: 0 14px 34px rgba(25, 22, 20, 0.26), 0 1px 0 rgba(255, 255, 255, 0.8) inset;
+      border-radius: 14px;
+    }
+    .custom-card h2,
+    .custom-card h3,
+    .custom-card label,
+    .custom-card .text-slate-800,
+    .custom-card .text-slate-700,
+    .custom-card .text-slate-900 {
+      color: var(--text-main) !important;
+    }
+    .custom-card .text-slate-500,
+    .custom-card .text-slate-400 {
+      color: var(--text-muted) !important;
+    }
+    .custom-card .border-slate-200,
+    .custom-card .border-slate-300 {
+      border-color: var(--border-color) !important;
+    }
+    .text-indigo-500,
+    .text-indigo-700 {
+      color: var(--accent-dark) !important;
+    }
+    .text-red-500,
+    .text-red-600 {
+      color: var(--danger) !important;
+    }
+    .text-green-500 {
+      color: var(--success) !important;
+    }
+    .bg-indigo-600 {
+      background-color: var(--primary) !important;
+      box-shadow: 0 14px 26px rgba(153, 27, 27, 0.28);
+    }
+    .hover\:bg-indigo-700:hover {
+      background-color: var(--primary-dark) !important;
+    }
+    .bg-slate-50,
+    .bg-slate-100,
+    .bg-slate-200 {
+      background-color: var(--primary-soft) !important;
+    }
+    .hover\:bg-slate-200:hover,
+    .hover\:bg-slate-300:hover {
+      background-color: #FFE5D2 !important;
+    }
+    .border-slate-100,
+    .border-slate-200,
+    .border-slate-300 {
+      border-color: var(--border-color) !important;
+    }
+
+    .input-field,
+    input[type="date"] {
+      width: 100%;
+      background-color: #FFF9F2;
+      color: var(--text-main);
+      padding: 0.75rem;
+      border-radius: 0.5rem;
+      border: 1px solid var(--border-color);
+      font-size: 0.875rem;
+      transition: all 0.2s;
+      box-shadow: inset 0 1px 2px rgba(86, 41, 21, 0.08);
+    }
+    .input-field:focus,
+    input[type="date"]:focus {
+      outline: none;
+      border-color: var(--accent);
+      background-color: #FFFFFF;
+      box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.18), inset 0 1px 2px rgba(86, 41, 21, 0.08);
+    }
+    #expenseList > div {
+      background-color: #FFF8EF !important;
+      border-color: var(--border-color) !important;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.8);
+    }
+    #expenseList button {
+      color: #9A3412 !important;
+    }
+    #expenseList button:hover {
+      color: var(--danger) !important;
+    }
+
+    .dropdown-list {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      z-index: 50;
+      background: #FFFDF8;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      max-height: 160px;
+      overflow-y: auto;
+      box-shadow: 0 18px 32px rgba(31, 19, 15, 0.2);
+    }
+    .dropdown-item {
+      padding: 0.75rem;
+      border-bottom: 1px solid var(--border-color);
+      color: var(--text-main);
+      font-size: 0.875rem;
+      cursor: pointer;
+    }
+    .dropdown-item:hover {
+      background-color: var(--primary-soft);
+      color: var(--accent-dark);
+    }
+
+    .fire-loading {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 9999;
+      font-size: 4rem;
+      color: var(--accent);
+      animation: fire-pulse 0.8s infinite alternate ease-in-out;
+      pointer-events: none;
+    }
+    @keyframes fire-pulse {
+      0% { transform: translate(-50%, -50%) scale(0.9); filter: drop-shadow(0 0 10px rgba(249, 115, 22, 0.5)); }
+      100% { transform: translate(-50%, -50%) scale(1.2); filter: drop-shadow(0 0 25px rgba(220, 38, 38, 0.8)); }
+    }
+    .scroll-container {
+      padding-top: calc(64px + env(safe-area-inset-top)) !important;
+    }
+    .app-switcher-toggle {
+      position: fixed;
+      top: max(10px, env(safe-area-inset-top));
+      left: max(10px, env(safe-area-inset-left));
+      z-index: 35;
+      width: 42px;
+      height: 42px;
+      border: none;
+      border-radius: 14px;
+      background: #FFFDF8;
+      color: var(--text-main);
+      box-shadow: 0 8px 22px rgba(0,0,0,0.25);
+      font-size: 24px;
+      font-weight: 800;
+      line-height: 1;
+      cursor: pointer;
+    }
+    .app-switcher-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 33;
+      background: rgba(0,0,0,0.42);
+      backdrop-filter: blur(2px);
+    }
+    .app-switcher-panel {
+      position: fixed;
+      top: calc(62px + env(safe-area-inset-top));
+      left: max(10px, env(safe-area-inset-left));
+      z-index: 34;
+      width: min(82vw, 280px);
+      background: #FFFDF8;
+      border: 1px solid var(--border-color);
+      border-radius: 18px;
+      padding: 12px;
+      box-shadow: 0 18px 42px rgba(0,0,0,0.32);
+    }
+    .app-switcher-title { padding: 8px 10px 10px; color: var(--text-muted); font-size: 0.85rem; font-weight: 800; }
+    .app-switcher-panel a {
+      display: block;
+      padding: 13px 12px;
+      border-radius: 12px;
+      color: var(--text-main);
+      text-decoration: none;
+      font-weight: 800;
+    }
+    .app-switcher-panel a.active { background: var(--primary-soft); color: var(--primary); }
+    .app-switcher-panel a + a { margin-top: 4px; }
+    .app-switcher-hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <button class="app-switcher-toggle" type="button" onclick="toggleAppSwitcher()" aria-label="เปิดเมนูระบบ">☰</button>
+  <div id="appSwitcherBackdrop" class="app-switcher-backdrop app-switcher-hidden" onclick="closeAppSwitcher()"></div>
+  <nav id="appSwitcherPanel" class="app-switcher-panel app-switcher-hidden" aria-label="เมนูระบบ">
+    <div class="app-switcher-title">เลือกใช้งาน</div>
+    <a href="./index.html">TAWANA ACC</a>
+    <a href="./grill.html" class="active">Grill-Meat</a>
+  </nav>
+
+  <div id="loadingOverlay" class="hidden">
+    <i class="fa-solid fa-fire-flame-curved fire-loading"></i>
+  </div>
+
+  <div id="lockScreen" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-40 flex flex-col items-center justify-center p-6 hidden">
+    <div class="custom-card p-8 w-full max-w-sm flex flex-col items-center text-center space-y-6">
+      <i class="fa-solid fa-circle-check text-green-500 text-6xl"></i>
+      <h2 class="text-2xl font-semibold text-slate-800">ส่งข้อมูลแล้ว</h2>
+      <div class="w-full flex justify-center">
+        <input type="date" id="lockDateInput" onchange="changeDateFromInput(this.value)"
+               class="bg-slate-100 text-slate-900 text-center font-bold py-3 px-4 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full max-w-[200px] shadow-inner">
+      </div>
+      <button onclick="unlockForEdit()" class="w-full py-3.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-semibold rounded-xl flex items-center justify-center gap-2 transition">
+        <i class="fa-solid fa-lock-open"></i> ปลดล็อคเพื่อแก้ไข
+      </button>
+    </div>
+  </div>
+
+  <div id="successModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="custom-card p-6 w-full max-w-sm flex flex-col items-center text-center space-y-5">
+      <i class="fa-solid fa-circle-check text-green-500 text-5xl"></i>
+      <h3 class="text-xl font-semibold text-slate-800" id="successText">บันทึกเรียบร้อย!</h3>
+      <button onclick="nextDayAction()" class="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-lg flex items-center justify-center gap-2 shadow-lg transition">
+        <i class="fa-solid fa-calendar-plus"></i> ทำรายการวันถัดไป
+      </button>
+      <button onclick="closeSuccessModal()" class="w-full py-2.5 bg-transparent text-slate-500 hover:text-slate-800 font-medium rounded-xl text-sm transition">
+        <i class="fa-solid fa-pen-to-square"></i> แก้ไขข้อมูล
+      </button>
+    </div>
+  </div>
+
+  <div class="scroll-container max-w-md mx-auto space-y-5">
+    
+    <div class="custom-card p-4 flex flex-col space-y-2">
+      <label class="text-sm font-semibold text-slate-500 flex items-center gap-2">
+        <i class="fa-regular fa-calendar text-indigo-500"></i> วันที่ทำรายการ
+      </label>
+      <div class="flex justify-center">
+        <input type="date" id="dateInput" onchange="onDateChange()" 
+               class="bg-slate-50 text-slate-900 text-center font-bold py-3 px-4 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 w-full shadow-inner">
+      </div>
+    </div>
+
+    <div class="custom-card p-4 space-y-4">
+      <h3 class="text-md font-bold text-slate-700 flex items-center gap-2 border-b border-slate-200 pb-2">
+        <i class="fa-solid fa-wallet text-green-500"></i> รายรับ
+      </h3>
+      <div class="space-y-3">
+        <div class="flex flex-col space-y-1">
+          <label class="text-xs font-medium text-slate-500">เงินสด</label>
+          <input type="number" id="cashInput" oninput="scheduleDraftSave()" onchange="saveDraftToFirebase()" placeholder="0.00"
+                 class="input-field text-right font-semibold text-lg">
+        </div>
+        <div class="flex flex-col space-y-1">
+          <label class="text-xs font-medium text-slate-500">เงินโอน</label>
+          <input type="number" id="transferInput" oninput="scheduleDraftSave()" onchange="saveDraftToFirebase()" placeholder="0.00"
+                 class="input-field text-right font-semibold text-lg">
+        </div>
+      </div>
+    </div>
+
+    <div class="custom-card p-4 space-y-4">
+      <h3 class="text-md font-bold text-slate-700 flex items-center gap-2 border-b border-slate-200 pb-2">
+        <i class="fa-solid fa-receipt text-red-500"></i> รายจ่าย
+      </h3>
+      <div id="expenseList" class="space-y-3"></div>
+      
+      <div class="flex flex-col gap-3 mt-4 pt-2">
+        <button onclick="addExpenseRowAndSave()" class="w-full py-3 bg-slate-100 hover:bg-slate-200 text-indigo-700 rounded-xl border border-slate-200 text-sm font-bold flex items-center justify-center gap-2 transition shadow-sm">
+          <i class="fa-solid fa-plus"></i> เพิ่มบรรทัด
+        </button>
+        <button onclick="clearAllToday()" class="w-full py-3 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl border border-red-100 text-sm font-semibold flex items-center justify-center gap-2 transition">
+          <i class="fa-solid fa-trash-can"></i> ล้างข้อมูลทั้งหมด
+        </button>
+      </div>
+    </div>  </div>
+
+  <div class="submit-dock">
+    <div class="submit-dock-inner">
+      <button id="submitButton" onclick="submitAllData()" class="submit-button w-full bg-indigo-600 hover:bg-indigo-700 text-white text-lg font-bold py-4 rounded-xl flex items-center justify-center gap-2 shadow-lg transition">
+        🚀 ส่งยอดเข้า Google Sheet
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // Config Firebase (ของคุณ)
+    const firebaseConfig = {
+      apiKey: "AIzaSyBqQbM2GSAqcVyZooORwLqzGE380QAGWTo",
+      authDomain: "grill-meat.firebaseapp.com",
+      databaseURL: "https://grill-meat-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "grill-meat",
+      storageBucket: "grill-meat.firebasestorage.app",
+      messagingSenderId: "209813792493",
+      appId: "1:209813792493:web:463ca7210c23c7ab1ecee4",
+      measurementId: "G-J47TF1HY0F"
+    };
+    
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+    const db = firebase.database();
+
+    // URL Web App
+    const API_URL = "https://script.google.com/macros/s/AKfycbzvSJjBT4c2Jsl0U0UYynYkE5J1eFR6h1OHMzACtE0dAq8VPGJHWUWan4fkSQnea_5V/exec";
+
+    const productUnits = {
+      "แก๊สปิคนิค": "ถัง", "แก๊สถังใหญ่ 15 กิโล": "ถัง", "หัวแก๊สปิคนิค": "หัว", "ถุงร้อน 4.5x7 นิ้ว": "หิ้ว",
+      "ถุง 5x8 นิ้ว": "หิ้ว", "ไม้เสียบ6นิ้ว": "แพ็ค", "ถุงหิ้ว 6x11": "หิ้ว", "ถุงหิ้ว 7x15": "หิ้ว",
+      "ถุงมือยาง": "แพ็ค", "ถุงมือใส": "แพ็ค", "แหนม": "ถุง", "ไส้อั่วสมุนไพร": "แพ็ค", "หมูนมสด": "แพ็ค",
+      "หมูหม่าล่า": "แพ็ค", "ไก่": "แพ็ค", "ริบอาย": "แพ็ค", "ตับ": "แพ็ค", "ไก่หม่าล่า": "แพ็ค",
+      "ข้าวเหนียว": "กระสอบ", "ต้นตำหรับ": "แพ็ค", "หม่าล่า": "แพ็ค", "พริกไทยดำ": "แพ็ค", "พริกเกาหลี": "แพ็ค",
+      "เสือร้องไห้": "แพ็ค"
+    };
+    const allProducts = Object.keys(productUnits).concat([
+      "เงินเดือน แม็กซ์", "พิเศษ แม็กซ์", "โบนัส แม็กซ์",
+      "ค่าเช่า ทาวน่ามาร์เก็ต", "ค่าขยะ ทาวน่ามาร์เก็ต", "ค่าไฟห้องแม๊กซ์"
+    ]);
+
+    function closeAppSwitcher() {
+      document.getElementById('appSwitcherBackdrop').classList.add('app-switcher-hidden');
+      document.getElementById('appSwitcherPanel').classList.add('app-switcher-hidden');
+    }
+
+    function toggleAppSwitcher() {
+      document.getElementById('appSwitcherBackdrop').classList.toggle('app-switcher-hidden');
+      document.getElementById('appSwitcherPanel').classList.toggle('app-switcher-hidden');
+    }
+
+    document.addEventListener('keydown', function(event) {
+      if (event.key === 'Escape') closeAppSwitcher();
+    });
+
+    function formatLocalDate(date) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    function getTodayDateString() {
+      return formatLocalDate(new Date());
+    }
+
+    function addDaysToDateString(dateStr, days) {
+      const [year, month, day] = dateStr.split('-').map(Number);
+      const date = new Date(year, month - 1, day);
+      date.setDate(date.getDate() + days);
+      return formatLocalDate(date);
+    }
+
+    window.onload = function() {
+      const localISOTime = getTodayDateString();
+      
+      document.getElementById('dateInput').value = localISOTime;
+      document.getElementById('lockDateInput').value = localISOTime;
+      fetchDateData(localISOTime);
+    };
+
+    function onDateChange() {
+      const dateStr = document.getElementById('dateInput').value;
+      if(!dateStr) return;
+      document.getElementById('lockDateInput').value = dateStr;
+      fetchDateData(dateStr);
+    }
+
+    function changeDateFromInput(val) {
+      if(!val) return;
+      document.getElementById('dateInput').value = val;
+      onDateChange();
+    }
+
+    let activeDateRequestId = 0;
+    let draftSaveTimer = null;
+    let sheetLookupStatus = 'ready';
+    const LOCAL_BACKUP_KEY = 'grill_meat_local_backups';
+    const LOCAL_BACKUP_LIMIT = 7;
+
+    function setLockScreenState(isLocked) {
+      if (isLocked) document.getElementById('lockScreen').classList.remove('hidden');
+      else document.getElementById('lockScreen').classList.add('hidden');
+    }
+
+    function setSheetLookupStatus(status) {
+      sheetLookupStatus = status;
+      const button = document.getElementById('submitButton');
+      if (!button) return;
+
+      const isLoading = status === 'loading';
+      button.disabled = isLoading;
+      button.classList.toggle('opacity-60', isLoading);
+      button.classList.toggle('cursor-not-allowed', isLoading);
+      button.innerHTML = isLoading
+        ? '<i class="fa-solid fa-spinner fa-spin"></i> กำลังตรวจข้อมูลเดิม...'
+        : '🚀 ส่งยอดเข้า Google Sheet';
+    }
+
+    function formHasAnyEntry() {
+      if (document.getElementById('cashInput').value.trim()) return true;
+      if (document.getElementById('transferInput').value.trim()) return true;
+      return Array.from(document.querySelectorAll('#expenseList input'))
+        .some(input => input.value.trim() !== '');
+    }
+
+    function withTimeout(promise, ms, message) {
+      return new Promise((resolve, reject) => {
+        const timer = setTimeout(() => reject(new Error(message)), ms);
+        promise.then(
+          value => {
+            clearTimeout(timer);
+            resolve(value);
+          },
+          error => {
+            clearTimeout(timer);
+            reject(error);
+          }
+        );
+      });
+    }
+
+    async function fetchJsonWithTimeout(url, ms) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), ms);
+      try {
+        const res = await fetch(url, { signal: controller.signal });
+        return await res.json();
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+
+    function getLocalBackups() {
+      try {
+        return JSON.parse(localStorage.getItem(LOCAL_BACKUP_KEY) || '{}');
+      } catch (error) {
+        console.warn('อ่าน local backup ไม่สำเร็จ', error);
+        return {};
+      }
+    }
+
+    function saveLocalBackup(data) {
+      if (!data || !data.dateStr) return;
+      const backups = getLocalBackups();
+      backups[data.dateStr] = {
+        ...data,
+        savedAt: Date.now()
+      };
+
+      Object.keys(backups)
+        .sort((a, b) => (backups[b].savedAt || 0) - (backups[a].savedAt || 0))
+        .slice(LOCAL_BACKUP_LIMIT)
+        .forEach(date => delete backups[date]);
+
+      localStorage.setItem(LOCAL_BACKUP_KEY, JSON.stringify(backups));
+    }
+
+    function getLocalBackup(dateStr) {
+      return getLocalBackups()[dateStr] || null;
+    }
+
+    function clearLocalBackup(dateStr) {
+      const backups = getLocalBackups();
+      if (backups[dateStr]) {
+        delete backups[dateStr];
+        localStorage.setItem(LOCAL_BACKUP_KEY, JSON.stringify(backups));
+      }
+    }
+
+    function scheduleDraftSave() {
+      clearTimeout(draftSaveTimer);
+      draftSaveTimer = setTimeout(() => saveDraftToFirebase(), 900);
+    }
+
+    async function fetchDateData(dateStr) {
+      const requestId = ++activeDateRequestId;
+      const isCurrentRequest = () =>
+        requestId === activeDateRequestId &&
+        document.getElementById('dateInput').value === dateStr;
+
+      showLoading(true);
+      setSheetLookupStatus('loading');
+      try {
+        let draft = null;
+        try {
+          const snapshot = await withTimeout(
+            db.ref('drafts/' + dateStr).once('value'),
+            5000,
+            'Firebase timeout'
+          );
+          draft = snapshot.val();
+        } catch (error) {
+          console.warn('โหลด draft จาก Firebase ไม่สำเร็จ', error);
+        }
+
+        if (!isCurrentRequest()) return;
+
+        if (draft) {
+          renderData(draft);
+          setLockScreenState(!!draft.isSubmitted);
+          setSheetLookupStatus('ready');
+          return;
+        }
+
+        const localBackup = getLocalBackup(dateStr);
+        if (localBackup) {
+          renderData(localBackup);
+          setLockScreenState(!!localBackup.isSubmitted);
+          setSheetLookupStatus('ready');
+          return;
+        }
+
+        renderData({ expenses: [] });
+        setLockScreenState(localStorage.getItem("submitted_" + dateStr) === "true");
+        showLoading(false);
+
+        try {
+          const response = await fetchJsonWithTimeout(
+            `${API_URL}?action=getData&date=${encodeURIComponent(dateStr)}&_=${Date.now()}`,
+            10000
+          );
+          if (!isCurrentRequest()) return;
+
+          if (response && response.success && !formHasAnyEntry()) {
+            renderData(response.data);
+            setLockScreenState(localStorage.getItem("submitted_" + dateStr) === "true");
+          }
+          setSheetLookupStatus('ready');
+        } catch (error) {
+          console.warn('โหลดข้อมูลจาก Google Sheet ไม่สำเร็จ', error);
+          setSheetLookupStatus('failed');
+        }
+      } finally {
+        if (isCurrentRequest()) showLoading(false);
+      }
+    }
+
+    function renderData(data) {
+      document.getElementById('cashInput').value = data.incomeCash || data.cash || '';
+      document.getElementById('transferInput').value = data.incomeTransfer || data.transfer || '';
+      document.getElementById('expenseList').innerHTML = "";
+      
+      if (data.expenses && data.expenses.length > 0) {
+        data.expenses.forEach(exp => {
+          addExpenseRow(exp.name, exp.amount, exp.unit, exp.price);
+        });
+      } else {
+        // เริ่มต้นด้วย 4 บรรทัดว่างเสมอ
+        for(let i=0; i<4; i++) {
+          addExpenseRow();
+        }
+      }
+    }
+
+    function addExpenseRow(name = "", amount = "", unit = "", price = "") {
+      const container = document.getElementById('expenseList');
+      const rowId = "row_" + Date.now() + Math.floor(Math.random() * 100);
+
+      const div = document.createElement('div');
+      div.id = rowId;
+      div.className = "flex items-center gap-1 p-2 rounded-xl bg-slate-50 border border-slate-200";
+      div.innerHTML = `
+        <div class="grid grid-cols-12 gap-1 w-full">
+          <div class="col-span-5 relative">
+            <input type="text" value="${name}" oninput="handleSearchDropdown(this); scheduleDraftSave()" onkeydown="checkNextFocus(event, this, 'amount')" onchange="saveDraftToFirebase()"
+                   placeholder="รายการ" class="input-field px-2">
+            <div class="dropdown-list hidden"></div>
+          </div>
+          <div class="col-span-2">
+            <input type="number" value="${amount}" oninput="scheduleDraftSave()" onkeydown="checkNextFocus(event, this, 'unit')" onchange="saveDraftToFirebase()"
+                   placeholder="จำนวน" class="input-field px-1 text-center">
+          </div>
+          <div class="col-span-2">
+            <input type="text" value="${unit}" oninput="scheduleDraftSave()" onkeydown="checkNextFocus(event, this, 'price')" onchange="saveDraftToFirebase()"
+                   placeholder="หน่วย" class="input-field px-1 text-center">
+          </div>
+          <div class="col-span-3">
+            <input type="number" value="${price}" oninput="scheduleDraftSave()" onkeydown="checkNextFocus(event, this, 'nextRow')" onchange="saveDraftToFirebase()"
+                   placeholder="บาท" class="input-field px-2 text-right font-semibold">
+          </div>
+        </div>
+        <button onclick="removeRow('${rowId}')" class="text-slate-400 hover:text-red-500 p-2 transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      `;
+      container.appendChild(div);
+    }
+
+    function addExpenseRowAndSave() {
+      addExpenseRow();
+      saveDraftToFirebase();
+    }
+
+    function removeRow(rowId) {
+      document.getElementById(rowId).remove();
+      saveDraftToFirebase();
+    }
+
+    function handleSearchDropdown(input) {
+      const dropdown = input.nextElementSibling;
+      const query = input.value.trim().toLowerCase();
+      if (!query) { dropdown.classList.add('hidden'); return; }
+      const matched = allProducts.filter(p => p.toLowerCase().includes(query));
+      if (matched.length === 0) { dropdown.classList.add('hidden'); return; }
+      dropdown.innerHTML = matched.map(m => `<div class="dropdown-item" onclick="selectDropdownItem('${m}', this)">${m}</div>`).join('');
+      dropdown.classList.remove('hidden');
+    }
+
+    function selectDropdownItem(val, itemElem) {
+      const dropdown = itemElem.parentElement;
+      const nameInput = dropdown.previousElementSibling;
+      nameInput.value = val;
+      dropdown.classList.add('hidden');
+      const row = nameInput.closest('.flex');
+      const unitInput = row.querySelector('input[placeholder="หน่วย"]');
+      if (productUnits[val]) { unitInput.value = productUnits[val]; }
+      
+      saveDraftToFirebase();
+      row.querySelector('input[placeholder="จำนวน"]').focus();
+    }
+
+    function checkNextFocus(e, input, targetType) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const row = input.closest('.flex');
+        if (targetType === 'amount') row.querySelector('input[placeholder="จำนวน"]').focus();
+        else if (targetType === 'unit') row.querySelector('input[placeholder="หน่วย"]').focus();
+        else if (targetType === 'price') row.querySelector('input[placeholder="บาท"]').focus();
+        else if (targetType === 'nextRow') {
+          const nextRowContainer = row.nextElementSibling;
+          if (nextRowContainer) nextRowContainer.querySelector('input[placeholder="รายการ"]').focus();
+          else {
+            addExpenseRow();
+            saveDraftToFirebase();
+            setTimeout(() => { document.getElementById('expenseList').lastElementChild.querySelector('input[placeholder="รายการ"]').focus(); }, 50);
+          }
+        }
+      }
+    }
+
+    function clearAllToday() {
+      if (confirm('ยืนยันล้างข้อมูลของวันนี้ทั้งหมด?')) {
+        document.getElementById('cashInput').value = '';
+        document.getElementById('transferInput').value = '';
+        document.getElementById('expenseList').innerHTML = '';
+        for(let i=0; i<4; i++) addExpenseRow(); // คืน 4 บรรทัด
+        
+        const dateStr = document.getElementById('dateInput').value;
+        db.ref('drafts/' + dateStr).remove();
+        clearLocalBackup(dateStr);
+        localStorage.removeItem("submitted_" + dateStr);
+        setLockScreenState(false);
+      }
+    }
+
+    function gatherData() {
+      const dateStr = document.getElementById('dateInput').value;
+      const cash = document.getElementById('cashInput').value;
+      const transfer = document.getElementById('transferInput').value;
+      const expenses = [];
+      document.querySelectorAll('#expenseList > div').forEach(row => {
+        const name = row.querySelector('input[placeholder="รายการ"]').value;
+        const amount = row.querySelector('input[placeholder="จำนวน"]').value;
+        const unit = row.querySelector('input[placeholder="หน่วย"]').value;
+        const price = row.querySelector('input[placeholder="บาท"]').value;
+        if (name || price) expenses.push({ name, amount, unit, price });
+      });
+      return { dateStr, cash, transfer, expenses };
+    }
+
+    function validateBeforeSubmit() {
+      const rows = Array.from(document.querySelectorAll('#expenseList > div'));
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        const nameInput = row.querySelector('input[placeholder="รายการ"]');
+        const name = nameInput.value.trim();
+        const amount = row.querySelector('input[placeholder="จำนวน"]').value.trim();
+        const unit = row.querySelector('input[placeholder="หน่วย"]').value.trim();
+        const price = row.querySelector('input[placeholder="บาท"]').value.trim();
+
+        if (!name && (amount || unit || price)) {
+          nameInput.focus();
+          alert(`รายจ่ายบรรทัดที่ ${i + 1} มีข้อมูลแล้ว แต่ยังไม่มีชื่อรายการ`);
+          return false;
+        }
+      }
+      return true;
+    }
+
+    function saveDraftToFirebase() {
+      clearTimeout(draftSaveTimer);
+      const data = gatherData();
+      if (!data.dateStr) return;
+      const isLocked = !document.getElementById('lockScreen').classList.contains('hidden');
+      data.isSubmitted = isLocked;
+      saveLocalBackup(data);
+      return db.ref('drafts/' + data.dateStr).set(data).catch(error => {
+        console.warn('บันทึก draft ไป Firebase ไม่สำเร็จ แต่เก็บ local backup ไว้แล้ว', error);
+      });
+    }
+
+    function normalizeForCompare(value) {
+      return (value ?? '').toString().trim().replace(/\s+/g, ' ');
+    }
+
+    function normalizeNumberForCompare(value) {
+      const text = normalizeForCompare(value).replace(/,/g, '');
+      if (!text) return '';
+      const number = Number(text);
+      return Number.isFinite(number) ? String(number) : text;
+    }
+
+    function expenseCompareKey(expense) {
+      return [
+        normalizeForCompare(expense.name),
+        normalizeNumberForCompare(expense.amount),
+        normalizeForCompare(expense.unit),
+        normalizeNumberForCompare(expense.price)
+      ].join('|');
+    }
+
+    function countExpenseKeys(expenses) {
+      return (expenses || []).reduce((map, expense) => {
+        const key = expenseCompareKey(expense);
+        map[key] = (map[key] || 0) + 1;
+        return map;
+      }, {});
+    }
+
+    function sheetDataMatches(inputData, sheetData) {
+      if (!sheetData) return false;
+
+      const cashMatches = normalizeNumberForCompare(sheetData.incomeCash || sheetData.cash) === normalizeNumberForCompare(inputData.cash);
+      const transferMatches = normalizeNumberForCompare(sheetData.incomeTransfer || sheetData.transfer) === normalizeNumberForCompare(inputData.transfer);
+      const inputExpenses = inputData.expenses || [];
+      const sheetExpenses = sheetData.expenses || [];
+
+      if (!cashMatches || !transferMatches || inputExpenses.length !== sheetExpenses.length) return false;
+
+      const inputCounts = countExpenseKeys(inputExpenses);
+      const sheetCounts = countExpenseKeys(sheetExpenses);
+      return Object.keys(inputCounts).every(key => inputCounts[key] === sheetCounts[key]);
+    }
+
+    function wait(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    async function fetchSheetDataForVerify(dateStr) {
+      const response = await fetchJsonWithTimeout(
+        `${API_URL}?action=getData&date=${encodeURIComponent(dateStr)}&_=${Date.now()}`,
+        15000
+      );
+      if (!response || !response.success) throw new Error(response?.error || 'อ่านข้อมูลจาก Google Sheet ไม่สำเร็จ');
+      return response.data;
+    }
+
+    async function verifySavedData(data) {
+      const delays = [700, 1400, 2600];
+      for (const delay of delays) {
+        await wait(delay);
+        const sheetData = await fetchSheetDataForVerify(data.dateStr);
+        if (sheetDataMatches(data, sheetData)) return true;
+      }
+      return false;
+    }
+
+    async function sendToAppsScript(data) {
+      const request = {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(data)
+      };
+
+      try {
+        const res = await fetch(API_URL, request);
+        const result = await res.json();
+        if (!result || !result.success) {
+          const appsScriptError = new Error(result?.error || 'Apps Script ไม่ยืนยันการบันทึก');
+          appsScriptError.confirmedFailure = true;
+          throw appsScriptError;
+        }
+        return { confirmed: true };
+      } catch (error) {
+        if (error.confirmedFailure) throw error;
+        await fetch(API_URL, { ...request, mode: 'no-cors' });
+        return { confirmed: false };
+      }
+    }
+
+    async function submitAllData() {
+      clearTimeout(draftSaveTimer);
+      if (sheetLookupStatus === 'loading') {
+        alert('กำลังตรวจข้อมูลเดิมจาก Google Sheet กรุณารอสักครู่ก่อนส่งข้อมูล');
+        return;
+      }
+
+      if (sheetLookupStatus === 'failed') {
+        const shouldContinue = confirm('ยังโหลดข้อมูลเดิมจาก Google Sheet ไม่สำเร็จ ถ้าวันนี้เคยมีข้อมูลอยู่แล้ว การส่งตอนนี้อาจทับข้อมูลเดิม ต้องการส่งต่อหรือไม่?');
+        if (!shouldContinue) return;
+      }
+
+      if (!validateBeforeSubmit()) return;
+
+      const data = gatherData();
+      if (!data.dateStr) return alert("กรุณาเลือกวันที่ก่อนบันทึก");
+      saveLocalBackup(data);
+      
+      showLoading(true);
+      try {
+        const sendResult = await sendToAppsScript(data);
+        let verified = sendResult.confirmed;
+        if (!sendResult.confirmed) {
+          try {
+            verified = await verifySavedData(data);
+          } catch (verifyError) {
+            verified = false;
+            console.warn('Read-back check failed after sending to Apps Script.', verifyError);
+          }
+        }
+
+        showLoading(false);
+        if (!verified) {
+          console.warn('Apps Script request was sent, but the read-back check did not match the current form data.');
+          alert('ส่งคำขอไปแล้ว แต่เว็บยังยืนยันไม่ได้ว่าข้อมูลเข้า Google Sheet ครบถ้วน ข้อมูลยังถูกเก็บเป็นฉบับร่างไว้ กรุณาเช็ค Google Sheet หรือกดส่งอีกครั้ง');
+          return;
+        }
+
+        localStorage.setItem("submitted_" + data.dateStr, "true");
+        data.isSubmitted = true;
+        saveLocalBackup(data);
+        await db.ref('drafts/' + data.dateStr).set(data).catch(error => {
+          console.warn('ส่งเข้า Sheet สำเร็จ แต่บันทึกสถานะกลับ Firebase ไม่สำเร็จ', error);
+        });
+        document.getElementById('successModal').classList.remove('hidden');
+      } catch (error) {
+        showLoading(false);
+        alert('บันทึกไม่สำเร็จ: ' + (error.message || 'เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์'));
+      }
+    }
+
+    function unlockForEdit() {
+      const dateStr = document.getElementById('dateInput').value;
+      localStorage.removeItem("submitted_" + dateStr);
+      const backup = getLocalBackup(dateStr);
+      if (backup) {
+        backup.isSubmitted = false;
+        saveLocalBackup(backup);
+      }
+      db.ref('drafts/' + dateStr).update({ isSubmitted: false }).catch(error => {
+        console.warn('ปลดล็อคใน Firebase ไม่สำเร็จ แต่ปลดล็อคในเครื่องแล้ว', error);
+      });
+      document.getElementById('lockScreen').classList.add('hidden');
+    }
+
+    function closeSuccessModal() {
+      document.getElementById('successModal').classList.add('hidden');
+      document.getElementById('lockScreen').classList.remove('hidden');
+    }
+
+    function nextDayAction() {
+      document.getElementById('successModal').classList.add('hidden');
+      const dateVal = document.getElementById('dateInput').value;
+      const nextDateStr = addDaysToDateString(dateVal, 1);
+      
+      document.getElementById('dateInput').value = nextDateStr;
+      document.getElementById('lockDateInput').value = nextDateStr;
+      fetchDateData(nextDateStr);
+    }
+
+    function showLoading(show) {
+      const overlay = document.getElementById('loadingOverlay');
+      if (show) overlay.classList.remove('hidden');
+      else overlay.classList.add('hidden');
+    }
+  </script>
+</body>
+</html>
+
+
+

@@ -79,9 +79,65 @@
     .saved-leave-name { font-weight: bold; color: #333; }
     .saved-leave-meta { font-size: 0.8rem; color: #666; margin-top: 3px; }
     .btn-cancel-leave { border: none; background: #fff1f0; color: var(--danger); border-radius: 10px; padding: 9px 10px; font-weight: bold; cursor: pointer; }
+
+    body { padding-top: calc(58px + env(safe-area-inset-top)) !important; }
+    .app-switcher-toggle {
+      position: fixed;
+      top: max(10px, env(safe-area-inset-top));
+      left: max(10px, env(safe-area-inset-left));
+      z-index: 1002;
+      width: 42px;
+      height: 42px;
+      border: none;
+      border-radius: 14px;
+      background: #fff;
+      color: #1f2933;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.16);
+      font-size: 24px;
+      font-weight: 800;
+      line-height: 1;
+      cursor: pointer;
+    }
+    .app-switcher-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      background: rgba(0,0,0,0.38);
+      backdrop-filter: blur(2px);
+    }
+    .app-switcher-panel {
+      position: fixed;
+      top: calc(62px + env(safe-area-inset-top));
+      left: max(10px, env(safe-area-inset-left));
+      z-index: 1001;
+      width: min(82vw, 280px);
+      background: #fff;
+      border-radius: 18px;
+      padding: 12px;
+      box-shadow: 0 14px 36px rgba(0,0,0,0.22);
+    }
+    .app-switcher-title { padding: 8px 10px 10px; color: #667085; font-size: 0.85rem; font-weight: 800; }
+    .app-switcher-panel a {
+      display: block;
+      padding: 13px 12px;
+      border-radius: 12px;
+      color: #1f2933;
+      text-decoration: none;
+      font-weight: 800;
+    }
+    .app-switcher-panel a.active { background: #e8f5e9; color: var(--primary); }
+    .app-switcher-panel a + a { margin-top: 4px; }
+    .app-switcher-hidden { display: none !important; }
   </style>
 </head>
 <body>
+  <button class="app-switcher-toggle" type="button" onclick="toggleAppSwitcher()" aria-label="เปิดเมนูระบบ">☰</button>
+  <div id="appSwitcherBackdrop" class="app-switcher-backdrop app-switcher-hidden" onclick="closeAppSwitcher()"></div>
+  <nav id="appSwitcherPanel" class="app-switcher-panel app-switcher-hidden" aria-label="เมนูระบบ">
+    <div class="app-switcher-title">เลือกใช้งาน</div>
+    <a href="./index.html" class="active">TAWANA ACC</a>
+    <a href="./grill.html">Grill-Meat</a>
+  </nav>
 
   <div class="card" style="z-index: 950;">
     <div class="settings-btn" onclick="toggleSettings()">⚙️</div>
@@ -217,6 +273,20 @@
     var currentSalaryData = [];
     var currentSalaryPeriod = null;
     var leaveRowCounter = 0; // ตัวนับบรรทัดของกล่องการลา
+
+    function closeAppSwitcher() {
+      document.getElementById('appSwitcherBackdrop').classList.add('app-switcher-hidden');
+      document.getElementById('appSwitcherPanel').classList.add('app-switcher-hidden');
+    }
+
+    function toggleAppSwitcher() {
+      document.getElementById('appSwitcherBackdrop').classList.toggle('app-switcher-hidden');
+      document.getElementById('appSwitcherPanel').classList.toggle('app-switcher-hidden');
+    }
+
+    document.addEventListener('keydown', function(event) {
+      if (event.key === 'Escape') closeAppSwitcher();
+    });
 
     // --- ระบบเชื่อมต่อ API ---
     async function apiCall(action, data = {}) {

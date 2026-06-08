@@ -413,6 +413,9 @@
         return;
       }
 
+      list.className = 'saved-leave-empty';
+      list.innerHTML = 'กำลังโหลดรายการลา...';
+
       try {
         const res = await apiCall('getLeavesByDate', { date: date });
         if (res.status === 'error') throw new Error(res.message || 'โหลดรายการลาไม่สำเร็จ');
@@ -851,7 +854,7 @@
         // ล้างข้อมูลหน้าจอและโหลดใหม่
         document.getElementById('expenseList').innerHTML = '';
         clearLeaveList(); // เคลียร์ช่องให้สะอาดทุกครั้งที่เปลี่ยนวัน
-        await refreshSavedLeaves(date);
+        refreshSavedLeaves(date);
         if (requestId !== loadDataSeq || document.getElementById('mainDate').value !== date) return;
 
         document.getElementById('val-cash').value = (d.cash) ? d.cash.v : '';

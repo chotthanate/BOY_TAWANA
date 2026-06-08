@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <title>BigC Expense & HR</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --primary: #f4b63f;
+      --primary-dark: #d98a05;
+      --primary-soft: #fff6cf;
+      --bg-app: #f7f0d6;
+      --card-bg: #fffdf2;
+      --text-main: #2f2617;
+      --text-muted: #7c6a4a;
+      --border: #eadc9b;
+      --success: #2f8f66;
+      --danger: #cc3d2f;
+      --blue: #4078a8;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Kanit', sans-serif;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.55), rgba(255,250,219,0.3)),
+        linear-gradient(135deg, #fff7cf 0%, #f4e39b 42%, #f8d26f 100%);
+      color: var(--text-main);
+      overflow: hidden;
+      position: fixed;
+      width: 100%;
+      height: 100%;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    button, input, select {
+      font-family: inherit;
+      font-size: 1rem;
+    }
+
+    .scroll-container {
+      height: 100%;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: calc(64px + env(safe-area-inset-top)) 14px calc(116px + env(safe-area-inset-bottom));
+    }
+
+    .page-shell {
+      width: min(100%, 460px);
+      margin: 0 auto;
+      display: grid;
+      gap: 14px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid rgba(234, 220, 155, 0.96);
+      border-radius: 14px;
+      box-shadow: 0 14px 28px rgba(127, 94, 19, 0.14), inset 0 1px 0 rgba(255,255,255,0.8);
+      padding: 14px;
+    }
+
+    .card-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0 0 12px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+      font-size: 1.02rem;
+      font-weight: 800;
+    }
+
+    .input-field {
+      width: 100%;
+      min-height: 46px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #fffaf0;
+      color: var(--text-main);
+      padding: 10px 11px;
+      outline: none;
+      box-shadow: inset 0 1px 2px rgba(107, 84, 28, 0.06);
+    }
+
+    .input-field:focus {
+      border-color: var(--primary-dark);
+      box-shadow: 0 0 0 3px rgba(244, 182, 63, 0.22);
+      background: #fffef8;
+    }
+
+    .expense-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1.55fr) 64px 64px 82px 34px;
+      gap: 6px;
+      align-items: start;
+      padding: 8px;
+      margin-bottom: 8px;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #fff8dc;
+    }
+
+    .expense-row input {
+      min-height: 42px;
+      padding: 8px;
+      font-size: 0.9rem;
+    }
+
+    .item-wrap { position: relative; }
+    .dropdown-list {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      right: 0;
+      z-index: 50;
+      max-height: 210px;
+      overflow-y: auto;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #fffef8;
+      box-shadow: 0 18px 32px rgba(113, 83, 17, 0.22);
+    }
+
+    .dropdown-list button {
+      width: 100%;
+      border: 0;
+      border-bottom: 1px solid rgba(234, 220, 155, 0.75);
+      background: transparent;
+      text-align: left;
+      color: var(--text-main);
+      padding: 10px 11px;
+      cursor: pointer;
+    }
+
+    .dropdown-list button:hover { background: var(--primary-soft); }
+    .hidden { display: none !important; }
+
+    .icon-button {
+      min-height: 42px;
+      border: 0;
+      border-radius: 10px;
+      background: #fff2df;
+      color: var(--danger);
+      font-weight: 800;
+      cursor: pointer;
+    }
+
+    .btn {
+      width: 100%;
+      min-height: 48px;
+      border: 0;
+      border-radius: 12px;
+      padding: 11px 14px;
+      font-weight: 800;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .btn-primary {
+      background: var(--primary-dark);
+      color: white;
+      box-shadow: 0 12px 22px rgba(217, 138, 5, 0.28);
+    }
+    .btn-soft { background: var(--primary-soft); color: var(--primary-dark); border: 1px solid var(--border); }
+    .btn-danger { background: #fff0ed; color: var(--danger); border: 1px solid rgba(204, 61, 47, 0.2); }
+    .btn-blue { background: #edf6ff; color: var(--blue); border: 1px solid rgba(64, 120, 168, 0.2); }
+
+    .button-grid {
+      display: grid;
+      gap: 9px;
+    }
+
+    .leave-grid {
+      display: grid;
+      gap: 10px;
+    }
+
+    .leave-person {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #fff9e8;
+      padding: 10px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .leave-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-weight: 800;
+    }
+
+    .leave-options {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .radio-pill {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      min-height: 42px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: white;
+      padding: 8px;
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+
+    .saved-leave-empty {
+      border: 1px dashed var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      background: #fff9e8;
+      color: var(--text-muted);
+      text-align: center;
+      font-size: 0.9rem;
+    }
+
+    .saved-leave-item {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px;
+      background: #fff9e8;
+      margin-top: 8px;
+    }
+
+    .saved-leave-name { font-weight: 800; }
+    .saved-leave-meta { color: var(--text-muted); font-size: 0.85rem; margin-top: 2px; }
+    .btn-cancel-leave {
+      border: 1px solid rgba(204, 61, 47, 0.18);
+      background: #fff0ed;
+      color: var(--danger);
+      border-radius: 10px;
+      padding: 8px 10px;
+      font-weight: 800;
+    }
+
+    .submit-dock {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 25;
+      padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom));
+      background: linear-gradient(to top, rgba(112, 82, 5, 0.28), rgba(112, 82, 5, 0));
+      pointer-events: none;
+    }
+
+    .submit-dock-inner {
+      width: min(100%, 460px);
+      margin: 0 auto;
+      pointer-events: auto;
+    }
+
+    .full-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 60;
+      background: rgba(67, 48, 8, 0.58);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: calc(18px + env(safe-area-inset-top)) 14px calc(18px + env(safe-area-inset-bottom));
+      overflow-y: auto;
+    }
+
+    .overlay-card {
+      width: min(100%, 460px);
+      margin: auto 0;
+      max-height: calc(100vh - 36px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+      overflow-y: auto;
+    }
+
+    .salary-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.86rem;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #fff9e8;
+    }
+
+    .salary-table th,
+    .salary-table td {
+      padding: 9px 6px;
+      border-bottom: 1px solid var(--border);
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    .salary-table th {
+      background: var(--primary-soft);
+      color: var(--text-muted);
+      font-size: 0.76rem;
+    }
+
+    .salary-table th:first-child,
+    .salary-table td:first-child { text-align: left; }
+
+    #loadingOverlay {
+      position: fixed;
+      inset: 0;
+      z-index: 90;
+      background: rgba(255, 248, 220, 0.56);
+      backdrop-filter: blur(2px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--primary-dark);
+      font-size: 2.2rem;
+    }
+
+    .app-switcher-toggle {
+      position: fixed;
+      top: max(10px, env(safe-area-inset-top));
+      left: max(10px, env(safe-area-inset-left));
+      z-index: 35;
+      width: 42px;
+      height: 42px;
+      border: none;
+      border-radius: 14px;
+      background: #fffef8;
+      color: var(--text-main);
+      box-shadow: 0 8px 22px rgba(112, 82, 5, 0.22);
+      font-size: 24px;
+      font-weight: 800;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    .app-switcher-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 33;
+      background: rgba(67, 48, 8, 0.34);
+      backdrop-filter: blur(2px);
+    }
+
+    .app-switcher-panel {
+      position: fixed;
+      top: calc(62px + env(safe-area-inset-top));
+      left: max(10px, env(safe-area-inset-left));
+      z-index: 34;
+      width: min(82vw, 280px);
+      background: #fffef8;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 12px;
+      box-shadow: 0 18px 42px rgba(112, 82, 5, 0.24);
+    }
+
+    .app-switcher-title { padding: 8px 10px 10px; color: var(--text-muted); font-size: 0.85rem; font-weight: 800; }
+    .app-switcher-panel a {
+      display: block;
+      padding: 13px 12px;
+      border-radius: 12px;
+      color: var(--text-main);
+      text-decoration: none;
+      font-weight: 800;
+    }
+    .app-switcher-panel a.active { background: var(--primary-soft); color: var(--primary-dark); }
+    .app-switcher-panel a + a { margin-top: 4px; }
+    .app-switcher-hidden { display: none !important; }
+
+    @media (max-width: 420px) {
+      .expense-row { grid-template-columns: minmax(0, 1.4fr) 54px 56px 68px 32px; gap: 5px; padding: 7px; }
+      .expense-row input { font-size: 0.82rem; padding: 7px; }
+      .leave-options { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <button class="app-switcher-toggle" type="button" onclick="toggleAppSwitcher()" aria-label="เปิดเมนูระบบ">☰</button>
+  <div id="appSwitcherBackdrop" class="app-switcher-backdrop app-switcher-hidden" onclick="closeAppSwitcher()"></div>
+  <nav id="appSwitcherPanel" class="app-switcher-panel app-switcher-hidden" aria-label="เมนูระบบ">
+    <div class="app-switcher-title">เลือกใช้งาน</div>
+    <a href="./index.html">ทาวน่า</a>
+    <a href="./grill.html">เนื้อย่าง</a>
+    <a href="./bigc.html" class="active">BigC</a>
+  </nav>
+
+  <div id="loadingOverlay" class="hidden">
+    <i class="fa-solid fa-spinner fa-spin"></i>
+  </div>
+
+  <div id="lockScreen" class="full-overlay hidden">
+    <div class="card overlay-card" style="text-align:center;">
+      <h2 style="margin:0 0 10px;">ส่งข้อมูลแล้ว</h2>
+      <p style="margin:0 0 14px;color:var(--text-muted);">วันที่นี้ถูกล็อกไว้ เพื่อกันแก้ข้อมูลโดยไม่ตั้งใจ</p>
+      <input type="date" id="lockDateInput" class="input-field" onchange="changeDateFromInput(this.value)">
+      <div style="height:10px;"></div>
+      <button class="btn btn-soft" onclick="unlockForEdit()">
+        <i class="fa-solid fa-lock-open"></i> ปลดล็อกเพื่อแก้ไข
+      </button>
+    </div>
+  </div>
+
+  <div id="successModal" class="full-overlay hidden">
+    <div class="card overlay-card" style="text-align:center;">
+      <h2 style="margin:0 0 12px;">บันทึกเรียบร้อย</h2>
+      <button class="btn btn-primary" onclick="nextDayAction()">
+        <i class="fa-solid fa-calendar-plus"></i> ทำรายการวันถัดไป
+      </button>
+      <div style="height:8px;"></div>
+      <button class="btn btn-soft" onclick="closeSuccessModal()">แก้ไขข้อมูล</button>
+    </div>
+  </div>
+
+  <div class="scroll-container">
+    <main class="page-shell">
+      <section class="card">
+        <h3 class="card-title"><i class="fa-regular fa-calendar"></i> วันที่ทำรายการ</h3>
+        <input type="date" id="dateInput" class="input-field" onchange="onDateChange()">
+      </section>
+
+      <section class="card">
+        <h3 class="card-title"><i class="fa-solid fa-receipt"></i> รายจ่าย BigC</h3>
+        <div id="expenseList"></div>
+        <div class="button-grid">
+          <button class="btn btn-soft" onclick="addExpenseRowAndSave()">
+            <i class="fa-solid fa-plus"></i> เพิ่มบรรทัดรายจ่าย
+          </button>
+          <button class="btn btn-danger" onclick="clearAllToday()">
+            <i class="fa-solid fa-trash-can"></i> ล้างข้อมูลทั้งหมด
+          </button>
+        </div>
+      </section>
+
+      <section class="card">
+        <h3 class="card-title"><i class="fa-solid fa-user-clock"></i> เงินเดือนและการลา</h3>
+        <div id="leaveInputArea" class="leave-grid"></div>
+        <button class="btn btn-soft" onclick="saveBigcLeaves()" style="margin-top:10px;">
+          <i class="fa-solid fa-floppy-disk"></i> บันทึกการลา
+        </button>
+        <div style="margin-top:12px;">
+          <div style="font-weight:800;color:var(--text-muted);font-size:0.9rem;margin-bottom:8px;">รายการลาของวันที่เลือก</div>
+          <div id="savedLeaveList" class="saved-leave-empty">ยังไม่มีรายการลาในวันที่เลือก</div>
+        </div>
+        <button class="btn btn-primary" onclick="openSalaryDashboard()" style="margin-top:12px;">
+          <i class="fa-solid fa-chart-column"></i> สรุปเงินเดือน
+        </button>
+      </section>
+    </main>
+  </div>
+
+  <div id="salaryOverlay" class="full-overlay hidden">
+    <div class="card overlay-card">
+      <h2 style="margin:0 0 4px;"><i class="fa-solid fa-chart-column"></i> สรุปเงินเดือน BigC</h2>
+      <p id="salaryMonthText" style="margin:0 0 12px;color:var(--text-muted);font-size:0.92rem;"></p>
+      <div style="display:grid;grid-template-columns:1fr 96px;gap:8px;margin-bottom:12px;">
+        <select id="salaryMonthSelect" class="input-field" onchange="loadSalaryDashboard()"></select>
+        <input type="number" id="salaryYearInput" class="input-field" min="2024" max="2100" onchange="loadSalaryDashboard()">
+      </div>
+      <div id="salaryTableArea" style="overflow-x:auto;"></div>
+      <div style="background:#fff9e8;border:1px solid var(--border);border-radius:12px;padding:11px;margin:12px 0;color:var(--text-muted);font-size:0.84rem;">
+        ค่าแรง 400/วัน | หักลา 40/ชม. | เงินพิเศษสูงสุด 800 บาท และลดลงครั้งละ 400 บาทเมื่อมีการลา
+      </div>
+      <button class="btn btn-primary" onclick="postSalariesToExpenses()">
+        <i class="fa-solid fa-arrow-down"></i> ดึงยอดลงรายจ่ายวันสิ้นเดือน
+      </button>
+      <div style="height:8px;"></div>
+      <button class="btn btn-soft" onclick="closeSalaryDashboard()">ปิดหน้าต่าง</button>
+    </div>
+  </div>
+
+  <div class="submit-dock">
+    <div class="submit-dock-inner">
+      <button id="submitButton" class="btn btn-primary" onclick="submitAllData()">
+        <i class="fa-solid fa-paper-plane"></i> ส่งรายจ่ายเข้า Google Sheet
+      </button>
+    </div>
+  </div>
+
+  <script>
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwLNcIbQzC30EhRAQQM2e7_WQysgepfPnyadJ6D5T5wE_eMhGPU9JKl_teDfPu7he6Z/exec";
+    const BIGC_STAFF = ["หยก", "หน่อย"];
+    const LOCAL_BACKUP_KEY = "bigc_expense_backup_v1";
+    const MASTER_ITEMS_KEY = "bigc_master_items_v1";
+    const salaryMonthNames = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+
+    let masterItems = [];
+    let masterMap = {};
+    let draftTimer = null;
+    let activeDateRequestId = 0;
+    let activeLeaveRequestId = 0;
+    let currentSalaryData = [];
+    let currentSalaryPeriod = null;
+
+    function closeAppSwitcher() {
+      document.getElementById('appSwitcherBackdrop').classList.add('app-switcher-hidden');
+      document.getElementById('appSwitcherPanel').classList.add('app-switcher-hidden');
+    }
+
+    function toggleAppSwitcher() {
+      document.getElementById('appSwitcherBackdrop').classList.toggle('app-switcher-hidden');
+      document.getElementById('appSwitcherPanel').classList.toggle('app-switcher-hidden');
+    }
+
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape') {
+        closeAppSwitcher();
+        closeSalaryDashboard();
+      }
+    });
+
+    async function apiCall(action, data = {}) {
+      const response = await fetch(WEB_APP_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action, ...data })
+      });
+      const text = await response.text();
+
+      let parsed;
+      try {
+        parsed = JSON.parse(text);
+      } catch (error) {
+        console.error('API returned non-JSON:', text.slice(0, 300));
+        throw new Error('หลังบ้านตอบกลับผิดปกติ');
+      }
+
+      if (parsed && parsed.status === 'error') throw new Error(parsed.message || 'หลังบ้านแจ้งข้อผิดพลาด');
+      return parsed;
+    }
+
+    function formatLocalDate(date) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    function addDaysToDateString(dateStr, days) {
+      const [year, month, day] = dateStr.split('-').map(Number);
+      const date = new Date(year, month - 1, day);
+      date.setDate(date.getDate() + days);
+      return formatLocalDate(date);
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function showLoading(show) {
+      document.getElementById('loadingOverlay').classList.toggle('hidden', !show);
+    }
+
+    function setLockScreenState(isLocked) {
+      document.getElementById('lockScreen').classList.toggle('hidden', !isLocked);
+    }
+
+    function setSubmitLoading(isLoading) {
+      const button = document.getElementById('submitButton');
+      button.disabled = isLoading;
+      button.style.opacity = isLoading ? '0.65' : '1';
+      button.innerHTML = isLoading
+        ? '<i class="fa-solid fa-spinner fa-spin"></i> กำลังบันทึก...'
+        : '<i class="fa-solid fa-paper-plane"></i> ส่งรายจ่ายเข้า Google Sheet';
+    }
+
+    function rebuildMasterMap() {
+      masterMap = {};
+      masterItems.forEach(item => {
+        if (!item || !item.name) return;
+        const key = item.name.trim().toLowerCase();
+        if (!masterMap[key]) masterMap[key] = item;
+      });
+    }
+
+    function loadMasterItemsFromCache() {
+      try {
+        const cached = JSON.parse(localStorage.getItem(MASTER_ITEMS_KEY) || '[]');
+        if (Array.isArray(cached)) {
+          masterItems = cached;
+          rebuildMasterMap();
+        }
+      } catch (error) {
+        console.warn('อ่าน master cache ไม่สำเร็จ', error);
+      }
+    }
+
+    async function loadMasterItems() {
+      loadMasterItemsFromCache();
+      try {
+        const result = await apiCall('bigcGetItems');
+        masterItems = result.items || [];
+        rebuildMasterMap();
+        localStorage.setItem(MASTER_ITEMS_KEY, JSON.stringify(masterItems));
+      } catch (error) {
+        console.warn('โหลดรายการ Database ไม่สำเร็จ ใช้ cache แทน', error);
+      }
+    }
+
+    function getLocalBackups() {
+      try {
+        return JSON.parse(localStorage.getItem(LOCAL_BACKUP_KEY) || '{}');
+      } catch (error) {
+        return {};
+      }
+    }
+
+    function saveLocalBackup(data) {
+      if (!data || !data.dateStr) return;
+      const backups = getLocalBackups();
+      backups[data.dateStr] = { ...data, savedAt: Date.now() };
+      localStorage.setItem(LOCAL_BACKUP_KEY, JSON.stringify(backups));
+    }
+
+    function getLocalBackup(dateStr) {
+      return getLocalBackups()[dateStr] || null;
+    }
+
+    function clearLocalBackup(dateStr) {
+      const backups = getLocalBackups();
+      delete backups[dateStr];
+      localStorage.setItem(LOCAL_BACKUP_KEY, JSON.stringify(backups));
+    }
+
+    function scheduleDraftSave() {
+      clearTimeout(draftTimer);
+      draftTimer = setTimeout(() => saveDraft(), 900);
+    }
+
+    function onDateChange() {
+      const dateStr = document.getElementById('dateInput').value;
+      if (!dateStr) return;
+      document.getElementById('lockDateInput').value = dateStr;
+      loadData(dateStr);
+    }
+
+    function changeDateFromInput(value) {
+      if (!value) return;
+      document.getElementById('dateInput').value = value;
+      onDateChange();
+    }
+
+    async function loadData(dateStr = document.getElementById('dateInput').value) {
+      const requestId = ++activeDateRequestId;
+      const isCurrent = () => requestId === activeDateRequestId && document.getElementById('dateInput').value === dateStr;
+      if (!dateStr) return;
+
+      showLoading(true);
+      refreshSavedLeaves(dateStr);
+      try {
+        let data = null;
+        let submitted = false;
+        try {
+          const result = await apiCall('bigcLoadData', { date: dateStr });
+          if (!isCurrent()) return;
+          submitted = !!result.submitted;
+          if (result.draft) data = JSON.parse(result.draft);
+        } catch (error) {
+          console.warn('โหลดข้อมูล BigC จาก backend ไม่สำเร็จ', error);
+        }
+
+        if (!data) data = getLocalBackup(dateStr);
+        renderData(data || { exp: [] });
+        setLockScreenState(submitted || localStorage.getItem('bigc_submitted_' + dateStr) === 'true');
+      } finally {
+        if (isCurrent()) showLoading(false);
+      }
+    }
+
+    function renderData(data) {
+      const list = document.getElementById('expenseList');
+      list.innerHTML = '';
+      const expenses = data && Array.isArray(data.exp) ? data.exp : [];
+      if (expenses.length > 0) {
+        expenses.forEach(item => addExpenseRow(item.i, item.q, item.u, item.p));
+      } else {
+        for (let i = 0; i < 4; i++) addExpenseRow();
+      }
+    }
+
+    function addExpenseRow(name = '', qty = '', unit = '', price = '') {
+      const row = document.createElement('div');
+      row.className = 'expense-row';
+      row.innerHTML = `
+        <div class="item-wrap">
+          <input type="text" class="input-field item-input" placeholder="รายการ" value="${escapeHtml(name)}" oninput="handleSearchDropdown(this); scheduleDraftSave()" onchange="saveDraft()">
+          <div class="dropdown-list hidden"></div>
+        </div>
+        <input type="number" class="input-field qty-input" placeholder="จำนวน" value="${escapeHtml(qty)}" oninput="scheduleDraftSave()" onchange="saveDraft()">
+        <input type="text" class="input-field unit-input" placeholder="หน่วย" value="${escapeHtml(unit)}" oninput="scheduleDraftSave()" onchange="saveDraft()">
+        <input type="number" class="input-field price-input" placeholder="ราคา" value="${escapeHtml(price)}" oninput="scheduleDraftSave()" onchange="saveDraft()">
+        <button type="button" class="icon-button" onclick="removeExpenseRow(this)" aria-label="ลบบรรทัด"><i class="fa-solid fa-xmark"></i></button>
+      `;
+      document.getElementById('expenseList').appendChild(row);
+    }
+
+    function addExpenseRowAndSave() {
+      addExpenseRow();
+      saveDraft();
+    }
+
+    function removeExpenseRow(button) {
+      button.closest('.expense-row').remove();
+      if (document.querySelectorAll('.expense-row').length === 0) addExpenseRow();
+      saveDraft();
+    }
+
+    function handleSearchDropdown(input) {
+      const dropdown = input.nextElementSibling;
+      const query = input.value.trim().toLowerCase();
+      dropdown.innerHTML = '';
+      if (!query) {
+        dropdown.classList.add('hidden');
+        return;
+      }
+
+      const matches = masterItems
+        .filter(item => item.name && item.name.toLowerCase().includes(query))
+        .slice(0, 35);
+      if (matches.length === 0) {
+        dropdown.classList.add('hidden');
+        return;
+      }
+
+      matches.forEach(item => {
+        const option = document.createElement('button');
+        option.type = 'button';
+        option.textContent = item.unit ? `${item.name} (${item.unit})` : item.name;
+        option.addEventListener('click', () => selectDropdownItem(input, item));
+        dropdown.appendChild(option);
+      });
+      dropdown.classList.remove('hidden');
+    }
+
+    function selectDropdownItem(input, item) {
+      const row = input.closest('.expense-row');
+      input.value = item.name;
+      row.querySelector('.unit-input').value = item.unit || '';
+      input.nextElementSibling.classList.add('hidden');
+      row.querySelector('.qty-input').focus();
+      saveDraft();
+    }
+
+    document.addEventListener('click', event => {
+      if (!event.target.closest('.item-wrap')) {
+        document.querySelectorAll('.dropdown-list').forEach(list => list.classList.add('hidden'));
+      }
+    });
+
+    function gatherData() {
+      const dateStr = document.getElementById('dateInput').value;
+      const exp = [];
+      document.querySelectorAll('.expense-row').forEach(row => {
+        const item = {
+          i: row.querySelector('.item-input').value.trim(),
+          q: row.querySelector('.qty-input').value.trim(),
+          u: row.querySelector('.unit-input').value.trim(),
+          p: row.querySelector('.price-input').value.trim()
+        };
+        if (item.i || item.q || item.u || item.p) {
+          const meta = masterMap[item.i.toLowerCase()] || {};
+          item.m = meta.mainType || '';
+          item.t = meta.subType || '';
+          exp.push(item);
+        }
+      });
+      return { dateStr, exp };
+    }
+
+    function validateData(data) {
+      if (!data.dateStr) {
+        alert('กรุณาเลือกวันที่ก่อนบันทึก');
+        return false;
+      }
+      if (!data.exp || data.exp.length === 0) {
+        alert('ยังไม่มีรายจ่ายให้บันทึก');
+        return false;
+      }
+
+      const rows = Array.from(document.querySelectorAll('.expense-row'));
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        const name = row.querySelector('.item-input').value.trim();
+        const qty = row.querySelector('.qty-input').value.trim();
+        const unit = row.querySelector('.unit-input').value.trim();
+        const price = row.querySelector('.price-input').value.trim();
+        if (!name && (qty || unit || price)) {
+          alert(`รายจ่ายบรรทัดที่ ${i + 1} มีข้อมูลแล้ว แต่ยังไม่มีชื่อรายการ`);
+          row.querySelector('.item-input').focus();
+          return false;
+        }
+      }
+      return true;
+    }
+
+    async function saveDraft() {
+      clearTimeout(draftTimer);
+      const data = gatherData();
+      if (!data.dateStr) return;
+      saveLocalBackup(data);
+      try {
+        await apiCall('bigcAutoSave', { date: data.dateStr, data });
+      } catch (error) {
+        console.warn('บันทึก Draft BigC ไป backend ไม่สำเร็จ แต่เก็บในเครื่องแล้ว', error);
+      }
+    }
+
+    async function submitAllData() {
+      clearTimeout(draftTimer);
+      const data = gatherData();
+      if (!validateData(data)) return;
+      if (!confirm(`ยืนยันส่งรายจ่าย BigC วันที่ ${data.dateStr} เข้า Google Sheet หรือไม่?`)) return;
+
+      setSubmitLoading(true);
+      showLoading(true);
+      try {
+        await apiCall('bigcSubmit', { date: data.dateStr, data });
+        localStorage.setItem('bigc_submitted_' + data.dateStr, 'true');
+        saveLocalBackup(data);
+        setLockScreenState(true);
+        document.getElementById('successModal').classList.remove('hidden');
+      } catch (error) {
+        alert('บันทึกไม่สำเร็จ: ' + error.message);
+      } finally {
+        showLoading(false);
+        setSubmitLoading(false);
+      }
+    }
+
+    async function unlockForEdit() {
+      const dateStr = document.getElementById('dateInput').value;
+      try {
+        await apiCall('bigcUnlockDate', { date: dateStr });
+      } catch (error) {
+        console.warn('ปลดล็อกจาก backend ไม่สำเร็จ แต่ปลดล็อกในเครื่องต่อ', error);
+      }
+      localStorage.removeItem('bigc_submitted_' + dateStr);
+      setLockScreenState(false);
+    }
+
+    function closeSuccessModal() {
+      document.getElementById('successModal').classList.add('hidden');
+      setLockScreenState(true);
+    }
+
+    function nextDayAction() {
+      document.getElementById('successModal').classList.add('hidden');
+      const nextDate = addDaysToDateString(document.getElementById('dateInput').value, 1);
+      document.getElementById('dateInput').value = nextDate;
+      document.getElementById('lockDateInput').value = nextDate;
+      loadData(nextDate);
+    }
+
+    function clearAllToday() {
+      if (!confirm('ยืนยันล้างข้อมูลรายจ่ายของวันที่เลือกทั้งหมด?')) return;
+      document.getElementById('expenseList').innerHTML = '';
+      for (let i = 0; i < 4; i++) addExpenseRow();
+      const dateStr = document.getElementById('dateInput').value;
+      clearLocalBackup(dateStr);
+      saveDraft();
+    }
+
+    function renderLeaveInputs() {
+      document.getElementById('leaveInputArea').innerHTML = BIGC_STAFF.map((name, index) => `
+        <div class="leave-person" data-name="${escapeHtml(name)}">
+          <div class="leave-header">
+            <label style="display:flex;align-items:center;gap:8px;">
+              <input type="checkbox" class="leave-enabled"> ${escapeHtml(name)}
+            </label>
+          </div>
+          <div class="leave-options">
+            <label class="radio-pill">
+              <input type="radio" name="leaveType_${index}" value="Full Day" checked onchange="toggleLeaveHours(this)">
+              ลาเต็มวัน
+            </label>
+            <label class="radio-pill">
+              <input type="radio" name="leaveType_${index}" value="Hourly" onchange="toggleLeaveHours(this)">
+              ลารายชั่วโมง
+            </label>
+          </div>
+          <input type="number" class="input-field leave-hours hidden" min="0.5" step="0.5" placeholder="จำนวนชั่วโมงที่ลา">
+        </div>
+      `).join('');
+    }
+
+    function toggleLeaveHours(radio) {
+      const row = radio.closest('.leave-person');
+      const input = row.querySelector('.leave-hours');
+      const isHourly = radio.value === 'Hourly';
+      input.classList.toggle('hidden', !isHourly);
+      if (!isHourly) input.value = '';
+    }
+
+    function collectLeavesToSave() {
+      const leaves = [];
+      const rows = Array.from(document.querySelectorAll('.leave-person'));
+      for (const row of rows) {
+        if (!row.querySelector('.leave-enabled').checked) continue;
+        const name = row.dataset.name;
+        const type = row.querySelector('input[type="radio"]:checked').value;
+        const hoursInput = row.querySelector('.leave-hours');
+        const hours = type === 'Hourly' ? Number(hoursInput.value) : 0;
+        if (type === 'Hourly' && (!hours || hours <= 0)) {
+          hoursInput.focus();
+          alert(`กรุณาระบุจำนวนชั่วโมงที่ลาของ ${name}`);
+          return null;
+        }
+        leaves.push({ name, type, hours });
+      }
+      return leaves;
+    }
+
+    async function saveBigcLeaves() {
+      const date = document.getElementById('dateInput').value;
+      const leaves = collectLeavesToSave();
+      if (!leaves) return;
+      if (leaves.length === 0) return alert('เลือกพนักงานที่ต้องการบันทึกการลาก่อน');
+
+      showLoading(true);
+      try {
+        await apiCall('bigcSaveLeaves', { date, leaves });
+        document.querySelectorAll('.leave-enabled').forEach(input => input.checked = false);
+        document.querySelectorAll('.leave-hours').forEach(input => {
+          input.value = '';
+          input.classList.add('hidden');
+        });
+        document.querySelectorAll('.leave-person').forEach((row, index) => {
+          row.querySelector(`input[name="leaveType_${index}"][value="Full Day"]`).checked = true;
+        });
+        await refreshSavedLeaves(date);
+        alert('บันทึกการลาเรียบร้อยแล้ว');
+      } catch (error) {
+        alert('บันทึกการลาไม่สำเร็จ: ' + error.message);
+      } finally {
+        showLoading(false);
+      }
+    }
+
+    function getLeaveTypeText(type, hours) {
+      return type === 'Hourly' ? `ลารายชั่วโมง ${hours || 0} ชม.` : 'ลาเต็มวัน';
+    }
+
+    function renderSavedLeaves(leaves) {
+      const list = document.getElementById('savedLeaveList');
+      if (!leaves || leaves.length === 0) {
+        list.className = 'saved-leave-empty';
+        list.innerHTML = 'ยังไม่มีรายการลาในวันที่เลือก';
+        return;
+      }
+
+      list.className = '';
+      list.innerHTML = leaves.map(leave => `
+        <div class="saved-leave-item">
+          <div>
+            <div class="saved-leave-name">${escapeHtml(leave.name)}</div>
+            <div class="saved-leave-meta">${escapeHtml(getLeaveTypeText(leave.type, leave.hours))}</div>
+          </div>
+          <button class="btn-cancel-leave" data-row="${escapeHtml(leave.rowNumber)}">ยกเลิก</button>
+        </div>
+      `).join('');
+
+      list.querySelectorAll('.btn-cancel-leave').forEach(button => {
+        button.addEventListener('click', () => cancelLeave(button.dataset.row));
+      });
+    }
+
+    async function refreshSavedLeaves(date) {
+      const list = document.getElementById('savedLeaveList');
+      if (!date || !list) return;
+      const requestId = ++activeLeaveRequestId;
+      list.className = 'saved-leave-empty';
+      list.innerHTML = 'กำลังโหลดรายการลา...';
+      try {
+        const result = await apiCall('bigcGetLeavesByDate', { date });
+        if (requestId !== activeLeaveRequestId) return;
+        renderSavedLeaves(result.leaves || []);
+      } catch (error) {
+        if (requestId !== activeLeaveRequestId) return;
+        list.innerHTML = 'โหลดรายการลาไม่สำเร็จ';
+      }
+    }
+
+    async function cancelLeave(rowNumber) {
+      const date = document.getElementById('dateInput').value;
+      if (!confirm('ยืนยันยกเลิกรายการลานี้หรือไม่?')) return;
+      showLoading(true);
+      try {
+        await apiCall('bigcCancelLeave', { rowNumber, date });
+        await refreshSavedLeaves(date);
+        alert('ยกเลิกรายการลาเรียบร้อยแล้ว');
+      } catch (error) {
+        alert('ยกเลิกรายการลาไม่สำเร็จ: ' + error.message);
+      } finally {
+        showLoading(false);
+      }
+    }
+
+    function setupSalarySelectors(month, year) {
+      const monthSelect = document.getElementById('salaryMonthSelect');
+      const yearInput = document.getElementById('salaryYearInput');
+      if (monthSelect.options.length === 0) {
+        salaryMonthNames.forEach((name, index) => {
+          const option = document.createElement('option');
+          option.value = String(index + 1);
+          option.textContent = name;
+          monthSelect.appendChild(option);
+        });
+      }
+      monthSelect.value = String(month);
+      yearInput.value = year;
+    }
+
+    function getSelectedSalaryPeriod() {
+      const month = parseInt(document.getElementById('salaryMonthSelect').value, 10);
+      const year = parseInt(document.getElementById('salaryYearInput').value, 10);
+      if (!month || month < 1 || month > 12 || !year) return null;
+      return { month, year };
+    }
+
+    function getSalaryMonthEndDate(period) {
+      const lastDay = new Date(period.year, period.month, 0).getDate();
+      return `${period.year}-${String(period.month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+    }
+
+    async function loadSalaryDashboard() {
+      const period = getSelectedSalaryPeriod();
+      if (!period) return alert('เลือกเดือนและปีให้ถูกต้องก่อนครับ');
+
+      showLoading(true);
+      try {
+        const result = await apiCall('bigcCalculateSalary', { month: period.month, year: period.year });
+        currentSalaryData = result.staff || [];
+        currentSalaryPeriod = period;
+        const rows = currentSalaryData.map(staff => `
+          <tr>
+            <td><strong>${escapeHtml(staff.name)}</strong></td>
+            <td>${staff.workedDays || 0}</td>
+            <td style="color:var(--danger);">${staff.fullLeaves || 0}</td>
+            <td style="color:var(--danger);">${staff.leaveHours || 0}</td>
+            <td>${Number(staff.bonusPay || 0).toLocaleString()}</td>
+            <td style="color:var(--success);font-weight:800;">${Number(staff.totalNet || 0).toLocaleString()}</td>
+          </tr>
+        `).join('');
+        document.getElementById('salaryMonthText').innerText =
+          `ข้อมูลเดือน ${salaryMonthNames[period.month - 1]} ${period.year} | ลงรายจ่ายวันที่ ${getSalaryMonthEndDate(period)}`;
+        document.getElementById('salaryTableArea').innerHTML = `
+          <table class="salary-table">
+            <tr><th>ชื่อ</th><th>วันทำงาน</th><th>ลาเต็มวัน</th><th>ลา(ชม.)</th><th>พิเศษ</th><th>รวมรับ</th></tr>
+            ${rows}
+          </table>
+        `;
+      } catch (error) {
+        alert('ดึงข้อมูลเงินเดือนไม่สำเร็จ: ' + error.message);
+      } finally {
+        showLoading(false);
+      }
+    }
+
+    async function openSalaryDashboard() {
+      const [year, month] = document.getElementById('dateInput').value.split('-').map(Number);
+      const today = new Date();
+      setupSalarySelectors(month || today.getMonth() + 1, year || today.getFullYear());
+      document.getElementById('salaryOverlay').classList.remove('hidden');
+      await loadSalaryDashboard();
+    }
+
+    function closeSalaryDashboard() {
+      document.getElementById('salaryOverlay').classList.add('hidden');
+    }
+
+    function isSalaryExpenseName(name) {
+      const value = String(name || '').trim();
+      return value.indexOf('เงินเดือน ') === 0 || value.indexOf('เงินพิเศษ ') === 0 || value.indexOf('โบนัส ') === 0;
+    }
+
+    function removeExistingSalaryRows() {
+      document.querySelectorAll('.expense-row').forEach(row => {
+        const name = row.querySelector('.item-input').value;
+        if (isSalaryExpenseName(name)) row.remove();
+      });
+    }
+
+    async function postSalariesToExpenses() {
+      const period = currentSalaryPeriod || getSelectedSalaryPeriod();
+      if (!period) return alert('เลือกเดือนและปีให้ถูกต้องก่อนครับ');
+      if (!currentSalaryData.length) await loadSalaryDashboard();
+
+      const targetDate = getSalaryMonthEndDate(period);
+      if (!confirm(`ระบบจะดึงยอดเงินเดือน BigC เดือน ${salaryMonthNames[period.month - 1]} ${period.year}\nไปใส่ในรายจ่ายวันที่ ${targetDate}\nยืนยันหรือไม่?`)) return;
+
+      closeSalaryDashboard();
+      document.getElementById('dateInput').value = targetDate;
+      document.getElementById('lockDateInput').value = targetDate;
+      await loadData(targetDate);
+
+      if (!document.getElementById('lockScreen').classList.contains('hidden')) {
+        return alert('วันสิ้นเดือนนี้ถูกล็อกไว้แล้ว ถ้าต้องการแก้รายจ่ายให้ปลดล็อกวันที่ก่อนครับ');
+      }
+
+      removeExistingSalaryRows();
+      currentSalaryData.forEach(staff => {
+        const netBase = Number(staff.basePay || 0) - Number(staff.hourDeduction || 0);
+        const bonusPay = Number(staff.bonusPay || 0);
+        if (netBase > 0) addExpenseRow(`เงินเดือน ${staff.name}`, 1, 'คน', netBase);
+        if (bonusPay > 0) addExpenseRow(`เงินพิเศษ ${staff.name}`, 1, 'คน', bonusPay);
+      });
+      await saveDraft();
+      alert(`ดึงยอดเงินเดือนลงรายจ่ายวันที่ ${targetDate} แล้ว ตรวจสอบก่อนกดส่งรายจ่ายเข้า Google Sheet`);
+    }
+
+    window.onload = async function() {
+      renderLeaveInputs();
+      const today = formatLocalDate(new Date());
+      document.getElementById('dateInput').value = today;
+      document.getElementById('lockDateInput').value = today;
+      loadMasterItems();
+      await loadData(today);
+    };
+  </script>
+</body>
+</html>

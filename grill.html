@@ -258,6 +258,78 @@
     .app-switcher-panel a.active { background: var(--primary-soft); color: var(--primary); }
     .app-switcher-panel a + a { margin-top: 4px; }
     .app-switcher-hidden { display: none !important; }
+    .saved-leave-empty {
+      border: 1px dashed var(--border-color);
+      border-radius: 12px;
+      padding: 12px;
+      background: #FFF8EF;
+      color: var(--text-muted);
+      text-align: center;
+      font-size: 0.86rem;
+    }
+    .saved-leave-item {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      align-items: center;
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 10px;
+      background: #FFF8EF;
+      margin-top: 8px;
+    }
+    .saved-leave-name { font-weight: 800; color: var(--text-main); }
+    .saved-leave-meta { font-size: 0.82rem; color: var(--text-muted); margin-top: 2px; }
+    .btn-cancel-leave {
+      border: 1px solid rgba(220, 38, 38, 0.16);
+      background: #FFF1F0;
+      color: var(--danger);
+      border-radius: 10px;
+      padding: 8px 10px;
+      font-weight: 800;
+    }
+    .full-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 60;
+      background: rgba(43, 41, 38, 0.82);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: calc(18px + env(safe-area-inset-top)) 14px calc(18px + env(safe-area-inset-bottom));
+      overflow-y: auto;
+    }
+    .salary-card {
+      width: min(100%, 28rem);
+      margin: auto 0;
+      max-height: calc(100vh - 36px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+      overflow-y: auto;
+    }
+    .salary-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.84rem;
+      background: #FFF8EF;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .salary-table th,
+    .salary-table td {
+      padding: 8px 6px;
+      border-bottom: 1px solid var(--border-color);
+      text-align: center;
+      white-space: nowrap;
+    }
+    .salary-table th {
+      background: var(--primary-soft);
+      color: var(--text-muted);
+      font-size: 0.75rem;
+    }
+    .salary-table td:first-child,
+    .salary-table th:first-child {
+      text-align: left;
+    }
   </style>
 </head>
 <body>
@@ -265,8 +337,8 @@
   <div id="appSwitcherBackdrop" class="app-switcher-backdrop app-switcher-hidden" onclick="closeAppSwitcher()"></div>
   <nav id="appSwitcherPanel" class="app-switcher-panel app-switcher-hidden" aria-label="เมนูระบบ">
     <div class="app-switcher-title">เลือกใช้งาน</div>
-    <a href="./index.html">TAWANA ACC</a>
-    <a href="./grill.html" class="active">Grill-Meat</a>
+    <a href="./index.html">ทาวน่า</a>
+    <a href="./grill.html" class="active">เนื้อย่าง</a>
   </nav>
 
   <div id="loadingOverlay" class="hidden">
@@ -344,7 +416,69 @@
           <i class="fa-solid fa-trash-can"></i> ล้างข้อมูลทั้งหมด
         </button>
       </div>
-    </div>  </div>
+    </div>
+
+    <div class="custom-card p-4 space-y-4">
+      <h3 class="text-md font-bold text-slate-700 flex items-center gap-2 border-b border-slate-200 pb-2">
+        <i class="fa-solid fa-user-clock text-indigo-500"></i> เงินเดือนและการลา
+      </h3>
+      <div class="rounded-xl bg-orange-50 border border-orange-100 p-3 space-y-3">
+        <div class="text-sm font-bold text-slate-700">บันทึกการลา แม็กซ์</div>
+        <div class="grid grid-cols-2 gap-2">
+          <label class="flex items-center gap-2 bg-white border border-orange-100 rounded-xl px-3 py-2 text-sm font-semibold">
+            <input type="radio" name="grillLeaveType" value="Full Day" checked onchange="toggleGrillLeaveHours(this)">
+            ลาเต็มวัน
+          </label>
+          <label class="flex items-center gap-2 bg-white border border-orange-100 rounded-xl px-3 py-2 text-sm font-semibold">
+            <input type="radio" name="grillLeaveType" value="Hourly" onchange="toggleGrillLeaveHours(this)">
+            ลารายชั่วโมง
+          </label>
+        </div>
+        <div id="grillLeaveHoursBox" class="hidden">
+          <input type="number" id="grillLeaveHoursInput" class="input-field" min="0.5" step="0.5" placeholder="จำนวนชั่วโมงที่ลา">
+        </div>
+        <button onclick="saveGrillLeave()" class="w-full py-3 bg-orange-100 hover:bg-orange-200 text-orange-900 rounded-xl border border-orange-200 text-sm font-bold flex items-center justify-center gap-2 transition">
+          <i class="fa-solid fa-floppy-disk"></i> บันทึกการลา
+        </button>
+        <div>
+          <div class="text-xs font-bold text-slate-500 mb-2">รายการลาของวันที่เลือก</div>
+          <div id="grillSavedLeaveList" class="saved-leave-empty">ยังไม่มีรายการลาในวันที่เลือก</div>
+        </div>
+      </div>
+      <button onclick="openGrillSalaryDashboard()" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition shadow-lg">
+        <i class="fa-solid fa-chart-column"></i> สรุปเงินเดือน
+      </button>
+    </div>
+  </div>
+
+  <div id="grillSalaryOverlay" class="full-overlay hidden">
+    <div class="custom-card salary-card p-4 space-y-4">
+      <div>
+        <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+          <i class="fa-solid fa-chart-column text-indigo-500"></i> สรุปเงินเดือนเนื้อย่าง
+        </h2>
+        <p id="grillSalaryMonthText" class="text-sm text-slate-500 mt-1"></p>
+      </div>
+
+      <div class="grid grid-cols-[1fr_96px] gap-2">
+        <select id="grillSalaryMonthSelect" class="input-field" onchange="loadGrillSalaryDashboard()"></select>
+        <input type="number" id="grillSalaryYearInput" class="input-field text-center" min="2024" max="2100" onchange="loadGrillSalaryDashboard()">
+      </div>
+
+      <div id="grillSalaryTableArea" class="overflow-x-auto"></div>
+
+      <div class="bg-orange-50 border border-orange-100 rounded-xl p-3 text-xs text-slate-500 leading-relaxed">
+        ค่าแรง 400/วัน | หักลา 40/ชม. | เงินพิเศษสูงสุด 800 บาท และลดลงครั้งละ 400 บาทเมื่อมีการลา
+      </div>
+
+      <button onclick="postGrillSalariesToExpenses()" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition shadow-lg">
+        <i class="fa-solid fa-arrow-down"></i> ดึงยอดลงรายจ่ายวันสิ้นเดือน
+      </button>
+      <button onclick="closeGrillSalaryDashboard()" class="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition">
+        ปิดหน้าต่าง
+      </button>
+    </div>
+  </div>
 
   <div class="submit-dock">
     <div class="submit-dock-inner">
@@ -374,6 +508,8 @@
 
     // URL Web App
     const API_URL = "https://script.google.com/macros/s/AKfycbzvSJjBT4c2Jsl0U0UYynYkE5J1eFR6h1OHMzACtE0dAq8VPGJHWUWan4fkSQnea_5V/exec";
+    const SALARY_API_URL = "https://script.google.com/macros/s/AKfycbwLNcIbQzC30EhRAQQM2e7_WQysgepfPnyadJ6D5T5wE_eMhGPU9JKl_teDfPu7he6Z/exec";
+    const GRILL_STAFF_NAME = "แม็กซ์";
 
     const productUnits = {
       "แก๊สปิคนิค": "ถัง", "แก๊สถังใหญ่ 15 กิโล": "ถัง", "หัวแก๊สปิคนิค": "หัว", "ถุงร้อน 4.5x7 นิ้ว": "หิ้ว",
@@ -387,6 +523,10 @@
       "เงินเดือน แม็กซ์", "พิเศษ แม็กซ์", "โบนัส แม็กซ์",
       "ค่าเช่า ทาวน่ามาร์เก็ต", "ค่าขยะ ทาวน่ามาร์เก็ต", "ค่าไฟห้องแม๊กซ์"
     ]);
+    const grillSalaryMonthNames = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+    let activeGrillLeaveRequestId = 0;
+    let currentGrillSalaryData = [];
+    let currentGrillSalaryPeriod = null;
 
     function closeAppSwitcher() {
       document.getElementById('appSwitcherBackdrop').classList.add('app-switcher-hidden');
@@ -500,6 +640,274 @@
       }
     }
 
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    async function apiSalaryCall(action, data = {}) {
+      const response = await fetch(SALARY_API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action, ...data })
+      });
+      const textResponse = await response.text();
+
+      let parsed;
+      try {
+        parsed = JSON.parse(textResponse);
+      } catch (error) {
+        console.error('Salary API returned non-JSON:', textResponse.slice(0, 300));
+        throw new Error('หลังบ้านเงินเดือนตอบกลับผิดปกติ');
+      }
+
+      if (parsed && parsed.status === 'error') {
+        throw new Error(parsed.message || 'หลังบ้านเงินเดือนแจ้งข้อผิดพลาด');
+      }
+      return parsed;
+    }
+
+    function toggleGrillLeaveHours(radio) {
+      const box = document.getElementById('grillLeaveHoursBox');
+      const input = document.getElementById('grillLeaveHoursInput');
+      const isHourly = radio && radio.value === 'Hourly';
+      box.classList.toggle('hidden', !isHourly);
+      if (!isHourly) input.value = '';
+      else setTimeout(() => input.focus(), 30);
+    }
+
+    function getGrillLeaveTypeText(type, hours) {
+      if (type === 'Hourly') return `ลารายชั่วโมง ${hours || 0} ชม.`;
+      return 'ลาเต็มวัน';
+    }
+
+    function renderGrillSavedLeaves(leaves) {
+      const list = document.getElementById('grillSavedLeaveList');
+      if (!list) return;
+
+      if (!leaves || leaves.length === 0) {
+        list.className = 'saved-leave-empty';
+        list.innerHTML = 'ยังไม่มีรายการลาในวันที่เลือก';
+        return;
+      }
+
+      list.className = '';
+      list.innerHTML = leaves.map(leave => `
+        <div class="saved-leave-item">
+          <div>
+            <div class="saved-leave-name">${escapeHtml(leave.name || GRILL_STAFF_NAME)}</div>
+            <div class="saved-leave-meta">${escapeHtml(getGrillLeaveTypeText(leave.type, leave.hours))}</div>
+          </div>
+          <button class="btn-cancel-leave" data-row="${escapeHtml(leave.rowNumber)}">ยกเลิก</button>
+        </div>
+      `).join('');
+
+      list.querySelectorAll('.btn-cancel-leave').forEach(button => {
+        button.addEventListener('click', () => cancelGrillLeave(button.dataset.row));
+      });
+    }
+
+    async function refreshGrillSavedLeaves(dateStr) {
+      const list = document.getElementById('grillSavedLeaveList');
+      if (!list || !dateStr) return;
+
+      const requestId = ++activeGrillLeaveRequestId;
+      list.className = 'saved-leave-empty';
+      list.innerHTML = 'กำลังโหลดรายการลา...';
+
+      try {
+        const result = await apiSalaryCall('grillGetLeavesByDate', { date: dateStr });
+        if (requestId !== activeGrillLeaveRequestId) return;
+        renderGrillSavedLeaves(result.leaves || []);
+      } catch (error) {
+        if (requestId !== activeGrillLeaveRequestId) return;
+        console.error('Load Grill leave error:', error);
+        list.className = 'saved-leave-empty';
+        list.innerHTML = 'โหลดรายการลาไม่สำเร็จ';
+      }
+    }
+
+    async function saveGrillLeave() {
+      const date = document.getElementById('dateInput').value;
+      const type = document.querySelector('input[name="grillLeaveType"]:checked')?.value || 'Full Day';
+      const hours = type === 'Hourly' ? Number(document.getElementById('grillLeaveHoursInput').value) : 0;
+
+      if (!date) return alert('กรุณาเลือกวันที่ก่อนบันทึกการลา');
+      if (type === 'Hourly' && (!hours || hours <= 0)) {
+        document.getElementById('grillLeaveHoursInput').focus();
+        return alert('กรุณาระบุจำนวนชั่วโมงที่ลาให้ถูกต้อง');
+      }
+
+      showLoading(true);
+      try {
+        await apiSalaryCall('grillSaveLeave', { date, type, hours });
+        document.getElementById('grillLeaveHoursInput').value = '';
+        document.querySelector('input[name="grillLeaveType"][value="Full Day"]').checked = true;
+        toggleGrillLeaveHours(document.querySelector('input[name="grillLeaveType"][value="Full Day"]'));
+        await refreshGrillSavedLeaves(date);
+        alert('บันทึกการลาเรียบร้อยแล้ว');
+      } catch (error) {
+        alert('บันทึกการลาไม่สำเร็จ: ' + error.message);
+      } finally {
+        showLoading(false);
+      }
+    }
+
+    async function cancelGrillLeave(rowNumber) {
+      const date = document.getElementById('dateInput').value;
+      if (!rowNumber || !date) return;
+      if (!confirm('ยืนยันยกเลิกรายการลาของแม็กซ์ในวันที่เลือกหรือไม่?')) return;
+
+      showLoading(true);
+      try {
+        await apiSalaryCall('grillCancelLeave', { rowNumber, date });
+        await refreshGrillSavedLeaves(date);
+        alert('ยกเลิกรายการลาเรียบร้อยแล้ว');
+      } catch (error) {
+        alert('ยกเลิกรายการลาไม่สำเร็จ: ' + error.message);
+      } finally {
+        showLoading(false);
+      }
+    }
+
+    function setupGrillSalarySelectors(month, year) {
+      const monthSelect = document.getElementById('grillSalaryMonthSelect');
+      const yearInput = document.getElementById('grillSalaryYearInput');
+      if (monthSelect && monthSelect.options.length === 0) {
+        grillSalaryMonthNames.forEach((name, index) => {
+          const option = document.createElement('option');
+          option.value = String(index + 1);
+          option.textContent = name;
+          monthSelect.appendChild(option);
+        });
+      }
+      if (monthSelect) monthSelect.value = String(month);
+      if (yearInput) yearInput.value = year;
+    }
+
+    function getSelectedGrillSalaryPeriod() {
+      const month = parseInt(document.getElementById('grillSalaryMonthSelect').value, 10);
+      const year = parseInt(document.getElementById('grillSalaryYearInput').value, 10);
+      if (!month || month < 1 || month > 12 || !year) return null;
+      return { month, year };
+    }
+
+    function formatDateValue(year, month, day) {
+      return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    }
+
+    function getGrillSalaryMonthEndDate(period) {
+      const lastDay = new Date(period.year, period.month, 0).getDate();
+      return formatDateValue(period.year, period.month, lastDay);
+    }
+
+    function getInputDatePeriod(dateStr) {
+      if (!dateStr) {
+        const today = new Date();
+        return { month: today.getMonth() + 1, year: today.getFullYear() };
+      }
+      const parts = dateStr.split('-').map(Number);
+      return { month: parts[1], year: parts[0] };
+    }
+
+    async function loadGrillSalaryDashboard() {
+      const period = getSelectedGrillSalaryPeriod();
+      if (!period) return alert('เลือกเดือนและปีให้ถูกต้องก่อนครับ');
+
+      showLoading(true);
+      try {
+        const result = await apiSalaryCall('grillCalculateSalary', { month: period.month, year: period.year });
+        const staff = result.staff || [];
+        currentGrillSalaryData = staff;
+        currentGrillSalaryPeriod = period;
+
+        const rows = staff.map(s => `
+          <tr>
+            <td><strong>${escapeHtml(s.name)}</strong></td>
+            <td>${s.workedDays || 0}</td>
+            <td style="color: var(--danger);">${s.fullLeaves || 0}</td>
+            <td style="color: var(--danger);">${s.leaveHours || 0}</td>
+            <td>${Number(s.bonusPay || 0).toLocaleString()}</td>
+            <td style="color: var(--success); font-weight: 800;">${Number(s.totalNet || 0).toLocaleString()}</td>
+          </tr>
+        `).join('');
+
+        document.getElementById('grillSalaryMonthText').innerText =
+          `ข้อมูลเดือน ${grillSalaryMonthNames[period.month - 1]} ${period.year} | ลงรายจ่ายวันที่ ${getGrillSalaryMonthEndDate(period)}`;
+        document.getElementById('grillSalaryTableArea').innerHTML = `
+          <table class="salary-table">
+            <tr><th>ชื่อ</th><th>วันทำงาน</th><th>ลาเต็มวัน</th><th>ลา(ชม.)</th><th>พิเศษ</th><th>รวมรับ</th></tr>
+            ${rows || '<tr><td colspan="6">ไม่มีข้อมูล</td></tr>'}
+          </table>
+        `;
+      } catch (error) {
+        alert('ดึงข้อมูลเงินเดือนไม่สำเร็จ: ' + error.message);
+      } finally {
+        showLoading(false);
+      }
+    }
+
+    async function openGrillSalaryDashboard() {
+      const period = getInputDatePeriod(document.getElementById('dateInput').value);
+      setupGrillSalarySelectors(period.month, period.year);
+      document.getElementById('grillSalaryOverlay').classList.remove('hidden');
+      await loadGrillSalaryDashboard();
+    }
+
+    function closeGrillSalaryDashboard() {
+      document.getElementById('grillSalaryOverlay').classList.add('hidden');
+    }
+
+    function isGrillSalaryExpenseName(name) {
+      const value = String(name || '').trim();
+      return value.indexOf('เงินเดือน ') === 0 ||
+        value.indexOf('พิเศษ ') === 0 ||
+        value.indexOf('เงินพิเศษ ') === 0 ||
+        value.indexOf('โบนัส ') === 0;
+    }
+
+    function removeExistingGrillSalaryExpenseRows() {
+      Array.from(document.querySelectorAll('#expenseList > div')).forEach(row => {
+        const nameInput = row.querySelector('input[placeholder="รายการ"]');
+        if (nameInput && isGrillSalaryExpenseName(nameInput.value)) row.remove();
+      });
+    }
+
+    async function postGrillSalariesToExpenses() {
+      const period = currentGrillSalaryPeriod || getSelectedGrillSalaryPeriod();
+      if (!period) return alert('เลือกเดือนและปีให้ถูกต้องก่อนครับ');
+      if (!currentGrillSalaryData || currentGrillSalaryData.length === 0) {
+        await loadGrillSalaryDashboard();
+      }
+
+      const salaryDate = getGrillSalaryMonthEndDate(period);
+      if (!confirm(`ระบบจะดึงยอดเงินเดือนร้านเนื้อย่าง เดือน ${grillSalaryMonthNames[period.month - 1]} ${period.year}\nไปใส่ในรายจ่ายวันที่ ${salaryDate}\nยืนยันหรือไม่?`)) return;
+
+      closeGrillSalaryDashboard();
+      document.getElementById('dateInput').value = salaryDate;
+      document.getElementById('lockDateInput').value = salaryDate;
+      await fetchDateData(salaryDate);
+
+      if (!document.getElementById('lockScreen').classList.contains('hidden')) {
+        return alert('วันสิ้นเดือนนี้ถูกล็อกไว้แล้ว ถ้าต้องการแก้รายจ่ายให้ปลดล็อกวันที่ก่อนครับ');
+      }
+
+      removeExistingGrillSalaryExpenseRows();
+      currentGrillSalaryData.forEach(staff => {
+        const netBase = Number(staff.basePay || 0) - Number(staff.hourDeduction || 0);
+        const bonusPay = Number(staff.bonusPay || 0);
+        if (netBase > 0) addExpenseRow(`เงินเดือน ${staff.name}`, 1, 'คน', netBase);
+        if (bonusPay > 0) addExpenseRow(`พิเศษ ${staff.name}`, 1, 'คน', bonusPay);
+      });
+
+      await saveDraftToFirebase();
+      alert(`ดึงยอดเงินเดือนลงรายจ่ายวันที่ ${salaryDate} เรียบร้อยแล้ว\nตรวจสอบแล้วกดปุ่มส่งยอดเข้า Google Sheet ได้เลยครับ`);
+    }
+
     function getLocalBackups() {
       try {
         return JSON.parse(localStorage.getItem(LOCAL_BACKUP_KEY) || '{}');
@@ -548,6 +956,7 @@
         requestId === activeDateRequestId &&
         document.getElementById('dateInput').value === dateStr;
 
+      refreshGrillSavedLeaves(dateStr);
       showLoading(true);
       setSheetLookupStatus('loading');
       try {

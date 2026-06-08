@@ -649,7 +649,6 @@
       if (savedItems) { itemDict = JSON.parse(savedItems); }
       var savedMeta = localStorage.getItem('BOY_JUICE_ITEM_META');
       if (savedMeta) { itemMetaDict = JSON.parse(savedMeta); }
-      pullItems();
 
       var savedStaff = localStorage.getItem('BOY_STAFF');
       if (savedStaff) { staffList = JSON.parse(savedStaff); }
@@ -657,7 +656,9 @@
 
       var today = new Date();
       document.getElementById('mainDate').value = today.toISOString().split('T')[0];
-      loadData();
+      loadData().finally(function() {
+        setTimeout(pullItems, 0);
+      });
     }
 
     function showSuggestions(inp) {

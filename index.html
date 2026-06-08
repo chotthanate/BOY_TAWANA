@@ -517,6 +517,19 @@
       await loadSalaryDashboard();
     }
 
+    function isSalaryExpenseRowName(name) {
+      var value = String(name || '').trim();
+      return value.indexOf('เงินเดือน ') === 0 || value.indexOf('เงินพิเศษ ') === 0 || value.indexOf('โบนัส ') === 0;
+    }
+
+    function removeExistingSalaryExpenseRows() {
+      var wrappers = Array.from(document.querySelectorAll('.swipe-wrapper'));
+      wrappers.forEach(wrapper => {
+        var itemInput = wrapper.querySelector('.exp-row .i');
+        if (itemInput && isSalaryExpenseRowName(itemInput.value)) wrapper.remove();
+      });
+    }
+
     async function postSalariesToExpenses() {
       const period = currentSalaryPeriod || getSelectedSalaryPeriod();
       if (!period) return alert("เลือกเดือนและปีให้ถูกต้องก่อนครับ");
@@ -530,9 +543,7 @@
         return alert("วันสิ้นเดือนนี้ถูกล็อกไว้แล้ว ถ้าต้องการแก้รายจ่ายให้กดปลดล็อกวันที่ก่อนครับ");
       }
 
-      var wrappers = document.querySelectorAll('.swipe-wrapper');
-      var emptyRowsNeeded = (currentSalaryData.length * 2) - wrappers.length; 
-      for(let i=0; i < emptyRowsNeeded; i++) addRow();
+      removeExistingSalaryExpenseRows();
 
       currentSalaryData.forEach(s => {
         if(s.basePay > 0) {

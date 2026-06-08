@@ -152,6 +152,10 @@
     <div class="overlay-card" style="padding: 15px;">
       <h2 style="margin: 0; color: #007aff;">📊 สรุปเงินเดือน</h2>
       <p id="salaryMonthText" style="color: #666; margin: 5px 0 10px 0; font-size: 0.9rem;"></p>
+      <div style="display:grid; grid-template-columns: 1fr 95px; gap: 8px; margin-bottom: 10px;">
+        <select id="salaryMonthSelect" onchange="loadSalaryDashboard()"></select>
+        <input type="number" id="salaryYearInput" onchange="loadSalaryDashboard()" style="text-align:center;" min="2024" max="2100">
+      </div>
       
       <div id="salaryTableArea" style="overflow-x: auto;"></div>
       
@@ -161,7 +165,7 @@
       </div>
 
       <button class="btn-main" style="background: var(--primary); color: white; margin-top: 0;" onclick="postSalariesToExpenses()">
-        ⬇️ ดึงยอดลงรายจ่ายของวันนี้
+        ⬇️ ดึงยอดลงรายจ่ายวันสิ้นเดือน
       </button>
       <button class="btn-main" style="background: #eee; color: #666;" onclick="document.getElementById('salaryOverlay').classList.add('hidden')">
         ปิดหน้าต่าง
@@ -211,6 +215,7 @@
     var loadDataSeq = 0;
     var staffList = ["ปู", "นัน", "สั้น", "หยก", "หน่อย", "ปา", "โดนัท"]; 
     var currentSalaryData = [];
+    var currentSalaryPeriod = null;
     var leaveRowCounter = 0; // ตัวนับบรรทัดของกล่องการลา
 
     // --- ระบบเชื่อมต่อ API ---
@@ -440,40 +445,91 @@
     // ==========================================
     // 📊 ระบบ Dashboard เงินเดือน
     // ==========================================
-    async function openSalaryDashboard() {
-      var dateVal = document.getElementById('mainDate').value;
-      if (!dateVal) return alert("กรุณาเลือกวันที่ก่อนครับ");
-      
+    const salaryMonthNames = ["มกราคม", "กุมภาพันธ์", "มีนาคม", "เมษายน", "พฤษภาคม", "มิถุนายน", "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"];
+
+    function setupSalarySelectors(month, year) {
+      const monthSelect = document.getElementById('salaryMonthSelect');
+      const yearInput = document.getElementById('salaryYearInput');
+      if (monthSelect && monthSelect.options.length === 0) {
+        salaryMonthNames.forEach((name, index) => {
+          const opt = document.createElement('option');
+          opt.value = String(index + 1);
+          opt.textContent = name;
+          monthSelect.appendChild(opt);
+        });
+      }
+      if (monthSelect) monthSelect.value = String(month);
+      if (yearInput) yearInput.value = year;
+    }
+
+    function getSelectedSalaryPeriod() {
+      const month = parseInt(document.getElementById('salaryMonthSelect').value, 10);
+      const year = parseInt(document.getElementById('salaryYearInput').value, 10);
+      if (!month || month < 1 || month > 12 || !year) return null;
+      return { month, year };
+    }
+
+    function formatDateValue(year, month, day) {
+      return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    }
+
+    function getSalaryMonthEndDate(period) {
+      const lastDay = new Date(period.year, period.month, 0).getDate();
+      return formatDateValue(period.year, period.month, lastDay);
+    }
+
+    async function loadSalaryDashboard() {
+      const period = getSelectedSalaryPeriod();
+      if (!period) return alert("เลือกเดือนและปีให้ถูกต้องก่อนครับ");
       document.getElementById('loadingOverlay').classList.remove('hidden');
-      var now = new Date(dateVal);
-      var month = now.getMonth() + 1;
-      var year = now.getFullYear();
-      
+
       try {
-        var data = await apiCall('calculateSalary', { month: month, year: year, staffList: staffList });
+        var data = await apiCall('calculateSalary', { month: period.month, year: period.year, staffList: staffList });
         currentSalaryData = data;
+        currentSalaryPeriod = period;
         
-        var html = `<table><tr><th>ชื่อ</th><th>วันทำงาน</th><th>ลา(ชม.)</th><th>รวมรับ (สุทธิ)</th></tr>`;
+        var html = `<table><tr><th>ชื่อ</th><th>วันทำงาน</th><th>ลาเต็มวัน</th><th>ลา(ชม.)</th><th>เงินพิเศษ</th><th>รวมรับ</th></tr>`;
         data.forEach(s => {
           html += `<tr>
             <td><strong>${s.name}</strong></td>
             <td>${s.workedDays}</td>
+            <td style="color:var(--danger)">${s.fullLeaves || 0}</td>
             <td style="color:var(--danger)">${s.leaveHours}</td>
+            <td>${s.bonusPay.toLocaleString()}</td>
             <td style="color:var(--primary); font-weight:bold;">${s.totalNet.toLocaleString()}</td>
           </tr>`;
         });
         html += `</table>`;
         
-        document.getElementById('salaryMonthText').innerText = `ข้อมูลเดือน ${month}/${year}`;
+        document.getElementById('salaryMonthText').innerText = `ข้อมูลเดือน ${salaryMonthNames[period.month - 1]} ${period.year} | ลงรายจ่ายวันที่ ${getSalaryMonthEndDate(period)}`;
         document.getElementById('salaryTableArea').innerHTML = html;
-        document.getElementById('salaryOverlay').classList.remove('hidden');
       } catch (e) { alert("❌ ดึงข้อมูลไม่สำเร็จ สาเหตุ: " + e.message); }
       document.getElementById('loadingOverlay').classList.add('hidden');
     }
 
-    function postSalariesToExpenses() {
-      if (!confirm("ระบบจะดึงยอดเงินเดือนทุกคนไปใส่ในช่องรายจ่าย\nยืนยันหรือไม่?")) return;
+    async function openSalaryDashboard() {
+      var dateVal = document.getElementById('mainDate').value;
+      var now = dateVal ? new Date(dateVal) : new Date();
+      var month = now.getMonth() + 1;
+      var year = now.getFullYear();
+      setupSalarySelectors(month, year);
+      document.getElementById('salaryOverlay').classList.remove('hidden');
+      await loadSalaryDashboard();
+    }
+
+    async function postSalariesToExpenses() {
+      const period = currentSalaryPeriod || getSelectedSalaryPeriod();
+      if (!period) return alert("เลือกเดือนและปีให้ถูกต้องก่อนครับ");
+      const salaryDate = getSalaryMonthEndDate(period);
+      if (!confirm(`ระบบจะดึงยอดเงินเดือนเดือน ${salaryMonthNames[period.month - 1]} ${period.year}\nไปใส่ในรายจ่ายวันที่ ${salaryDate}\nยืนยันหรือไม่?`)) return;
       
+      document.getElementById('salaryOverlay').classList.add('hidden');
+      document.getElementById('mainDate').value = salaryDate;
+      await loadData();
+      if (!document.getElementById('lockedOverlay').classList.contains('hidden')) {
+        return alert("วันสิ้นเดือนนี้ถูกล็อกไว้แล้ว ถ้าต้องการแก้รายจ่ายให้กดปลดล็อกวันที่ก่อนครับ");
+      }
+
       var wrappers = document.querySelectorAll('.swipe-wrapper');
       var emptyRowsNeeded = (currentSalaryData.length * 2) - wrappers.length; 
       for(let i=0; i < emptyRowsNeeded; i++) addRow();
@@ -489,8 +545,7 @@
       });
       
       doSync(); 
-      document.getElementById('salaryOverlay').classList.add('hidden');
-      alert("✅ ดึงยอดเงินเดือนลงตารางรายจ่ายเรียบร้อยแล้ว\nตรวจสอบและกดปุ่ม '🚀 ส่งยอดสรุปชีท' ด้านล่างได้เลยครับ");
+      alert(`✅ ดึงยอดเงินเดือนลงรายจ่ายวันที่ ${salaryDate} เรียบร้อยแล้ว\nตรวจสอบและกดปุ่ม '🚀 ส่งยอดสรุปชีท' ด้านล่างได้เลยครับ`);
     }
 
     // ==========================================

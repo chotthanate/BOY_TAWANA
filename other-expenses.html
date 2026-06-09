@@ -446,6 +446,45 @@
       if (!document.querySelector('.expense-row')) addExpenseRow();
     }
 
+    function getEnterNavigationFields() {
+      return Array.from(document.querySelectorAll(
+        '#expenseDate, #expenseList .item, #expenseList .quantity, #expenseList .amount, #expenseList .category'
+      ));
+    }
+
+    function focusField(field) {
+      if (!field) return;
+      field.focus();
+      if (field.tagName !== 'SELECT' && typeof field.select === 'function') field.select();
+    }
+
+    function focusNextField(currentField) {
+      const fields = getEnterNavigationFields();
+      const currentIndex = fields.indexOf(currentField);
+      if (currentIndex < 0) return;
+
+      if (currentIndex === fields.length - 1) {
+        addExpenseRow();
+        focusField(getEnterNavigationFields()[currentIndex + 1]);
+        return;
+      }
+
+      focusField(fields[currentIndex + 1]);
+    }
+
+    function handleEnterNavigation(event) {
+      if (event.key !== 'Enter' || event.isComposing) return;
+      if (!event.target.matches('#expenseDate, #expenseList input, #expenseList select')) return;
+
+      event.preventDefault();
+      if (event.target.value === ADD_CATEGORY_VALUE) {
+        handleCategoryChange(event.target);
+        return;
+      }
+
+      focusNextField(event.target);
+    }
+
     function collectRows() {
       return Array.from(document.querySelectorAll('.expense-row')).map(row => ({
         item: row.querySelector('.item').value.trim(),
@@ -569,6 +608,7 @@
 
     document.addEventListener('DOMContentLoaded', async () => {
       document.getElementById('expenseDate').value = todayKey();
+      document.addEventListener('keydown', handleEnterNavigation);
       await refreshCategories();
       await loadDateData();
     });

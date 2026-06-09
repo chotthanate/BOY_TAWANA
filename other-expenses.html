@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="theme-color" content="#1f7a55">
+  <title>ค่าใช้จ่ายอื่นๆ</title>
+  <style>
+    :root {
+      --bg: #f6f8f5;
+      --surface: #ffffff;
+      --surface-strong: #eef7f0;
+      --text: #1c2921;
+      --muted: #66736b;
+      --line: #dbe5dd;
+      --primary: #1f7a55;
+      --primary-dark: #15563c;
+      --primary-soft: #dff2e7;
+      --danger: #d64545;
+      --warning: #b87916;
+      --shadow: 0 12px 32px rgba(18, 45, 32, 0.12);
+      --radius: 8px;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { min-height: 100%; overflow-x: hidden; }
+    body {
+      margin: 0;
+      font-family: Arial, "Noto Sans Thai", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+      padding: max(14px, env(safe-area-inset-top)) 12px max(20px, env(safe-area-inset-bottom));
+    }
+
+    button, input {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+      min-height: 44px;
+    }
+
+    .app-switcher-toggle {
+      position: fixed;
+      top: max(14px, env(safe-area-inset-top));
+      left: 14px;
+      z-index: 60;
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      background: var(--surface);
+      color: var(--primary);
+      box-shadow: 0 8px 24px rgba(20, 40, 30, 0.16);
+      font-size: 1.45rem;
+      font-weight: 900;
+    }
+
+    .app-switcher-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.18);
+      z-index: 55;
+    }
+
+    .app-switcher-panel {
+      position: fixed;
+      top: calc(max(14px, env(safe-area-inset-top)) + 54px);
+      left: 14px;
+      width: min(250px, calc(100vw - 28px));
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 10px;
+      z-index: 65;
+    }
+
+    .app-switcher-title {
+      padding: 8px 10px 10px;
+      color: var(--muted);
+      font-size: 0.85rem;
+      font-weight: 800;
+    }
+
+    .app-switcher-panel a {
+      display: block;
+      padding: 12px 14px;
+      border-radius: 7px;
+      color: var(--text);
+      text-decoration: none;
+      font-weight: 800;
+    }
+
+    .app-switcher-panel a.active {
+      background: var(--primary-soft);
+      color: var(--primary-dark);
+    }
+
+    .app-switcher-panel a + a { margin-top: 4px; }
+    .app-switcher-hidden { display: none !important; }
+
+    .shell {
+      width: min(980px, 100%);
+      margin: 0 auto;
+      padding-top: 58px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .title-block h1 {
+      margin: 0;
+      font-size: clamp(1.5rem, 4vw, 2.15rem);
+      line-height: 1.15;
+      letter-spacing: 0;
+    }
+
+    .title-block p {
+      margin: 6px 0 0;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 34px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: var(--surface-strong);
+      color: var(--primary-dark);
+      font-size: 0.86rem;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: 0 8px 22px rgba(18, 45, 32, 0.08);
+      padding: 14px;
+    }
+
+    .control-grid {
+      display: grid;
+      grid-template-columns: minmax(170px, 1fr) minmax(220px, 1.4fr) auto;
+      gap: 10px;
+      align-items: end;
+      margin-bottom: 14px;
+    }
+
+    .field {
+      display: grid;
+      gap: 6px;
+    }
+
+    .field label {
+      color: var(--muted);
+      font-size: 0.82rem;
+      font-weight: 800;
+    }
+
+    .input {
+      width: 100%;
+      min-height: 44px;
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      background: #fff;
+      color: var(--text);
+      padding: 9px 11px;
+      outline: none;
+    }
+
+    .input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(31, 122, 85, 0.14);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      border-radius: 7px;
+      padding: 9px 13px;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .btn-secondary {
+      background: var(--primary-soft);
+      color: var(--primary-dark);
+    }
+
+    .btn-ghost {
+      background: #f1f5f2;
+      color: var(--text);
+    }
+
+    .btn-danger {
+      background: #fde8e8;
+      color: var(--danger);
+    }
+
+    .summary-strip {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .summary-cell {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 10px;
+      background: #fbfcfb;
+    }
+
+    .summary-cell span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+
+    .summary-cell strong {
+      font-size: 1.1rem;
+    }
+
+    .expense-list {
+      display: grid;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .expense-row {
+      display: grid;
+      grid-template-columns: minmax(180px, 1.4fr) minmax(86px, 0.55fr) minmax(110px, 0.7fr) minmax(150px, 1fr) 54px;
+      gap: 8px;
+      align-items: center;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+    }
+
+    .delete-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 7px;
+      background: #fff0f0;
+      color: var(--danger);
+      font-weight: 900;
+    }
+
+    .action-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .action-row .left,
+    .action-row .right {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .message {
+      min-height: 24px;
+      margin-top: 12px;
+      color: var(--muted);
+      font-weight: 800;
+      line-height: 1.45;
+    }
+
+    .message.error { color: var(--danger); }
+    .message.warn { color: var(--warning); }
+    .message.success { color: var(--primary-dark); }
+
+    @media (max-width: 720px) {
+      body { padding-left: 10px; padding-right: 10px; }
+      .shell { padding-top: 54px; }
+      .topbar {
+        display: grid;
+        gap: 8px;
+      }
+      .status-pill { justify-self: start; }
+      .control-grid {
+        grid-template-columns: 1fr;
+      }
+      .summary-strip {
+        grid-template-columns: 1fr;
+      }
+      .expense-row {
+        grid-template-columns: 1fr 1fr;
+      }
+      .expense-row .item,
+      .expense-row .category {
+        grid-column: 1 / -1;
+      }
+      .delete-btn {
+        width: 100%;
+        grid-column: 1 / -1;
+      }
+      .action-row,
+      .action-row .left,
+      .action-row .right,
+      .btn {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <button class="app-switcher-toggle" type="button" onclick="toggleAppSwitcher()" aria-label="เปิดเมนูระบบ">☰</button>
+  <div id="appSwitcherBackdrop" class="app-switcher-backdrop app-switcher-hidden" onclick="closeAppSwitcher()"></div>
+  <nav id="appSwitcherPanel" class="app-switcher-panel app-switcher-hidden" aria-label="เมนูระบบ">
+    <div class="app-switcher-title">เลือกใช้งาน</div>
+    <a href="./index.html">ทาวน่า</a>
+    <a href="./grill.html">เนื้อย่าง</a>
+    <a href="./bigc.html">BigC</a>
+    <a href="./other-expenses.html" class="active">ค่าใช้จ่ายอื่นๆ</a>
+  </nav>
+
+  <main class="shell">
+    <div class="topbar">
+      <div class="title-block">
+        <h1>ค่าใช้จ่ายอื่นๆ</h1>
+        <p>บันทึกลงชีท ค่าใช้จ่าย 2569 ช่วง B4:F</p>
+      </div>
+      <div id="saveState" class="status-pill">พร้อมใช้งาน</div>
+    </div>
+
+    <section class="panel" aria-label="ฟอร์มบันทึกค่าใช้จ่ายอื่นๆ">
+      <div class="control-grid">
+        <div class="field">
+          <label for="expenseDate">วันที่</label>
+          <input id="expenseDate" class="input" type="date" onchange="loadDateData()">
+        </div>
+        <div class="field">
+          <label for="newCategoryInput">เพิ่มประเภทใน dropdown</label>
+          <input id="newCategoryInput" class="input" type="text" placeholder="พิมพ์ประเภทใหม่">
+        </div>
+        <button class="btn btn-secondary" type="button" onclick="addCategory()">เพิ่มประเภท</button>
+      </div>
+
+      <div class="summary-strip">
+        <div class="summary-cell">
+          <span>จำนวนรายการ</span>
+          <strong id="rowCount">0</strong>
+        </div>
+        <div class="summary-cell">
+          <span>ยอดรวม</span>
+          <strong id="totalAmount">0</strong>
+        </div>
+        <div class="summary-cell">
+          <span>หมวดใน dropdown</span>
+          <strong id="categoryCount">0</strong>
+        </div>
+      </div>
+
+      <datalist id="categoryOptions"></datalist>
+      <div id="expenseList" class="expense-list"></div>
+
+      <div class="action-row">
+        <div class="left">
+          <button class="btn btn-secondary" type="button" onclick="addExpenseRow()">เพิ่มรายการ</button>
+          <button class="btn btn-ghost" type="button" onclick="refreshCategories()">อัปเดตหมวดหมู่</button>
+        </div>
+        <div class="right">
+          <button class="btn btn-danger" type="button" onclick="clearRows()">ล้างข้อมูล</button>
+          <button class="btn btn-primary" type="button" onclick="saveData()">บันทึก</button>
+        </div>
+      </div>
+
+      <div id="message" class="message" role="status"></div>
+    </section>
+  </main>
+
+  <script>
+    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwLNcIbQzC30EhRAQQM2e7_WQysgepfPnyadJ6D5T5wE_eMhGPU9JKl_teDfPu7he6Z/exec";
+    let categories = [];
+
+    function closeAppSwitcher() {
+      document.getElementById('appSwitcherBackdrop').classList.add('app-switcher-hidden');
+      document.getElementById('appSwitcherPanel').classList.add('app-switcher-hidden');
+    }
+
+    function toggleAppSwitcher() {
+      document.getElementById('appSwitcherBackdrop').classList.toggle('app-switcher-hidden');
+      document.getElementById('appSwitcherPanel').classList.toggle('app-switcher-hidden');
+    }
+
+    function setMessage(text, type) {
+      const el = document.getElementById('message');
+      el.textContent = text || '';
+      el.className = 'message' + (type ? ' ' + type : '');
+    }
+
+    function setSaveState(text) {
+      document.getElementById('saveState').textContent = text;
+    }
+
+    function todayKey() {
+      const now = new Date();
+      now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+      return now.toISOString().slice(0, 10);
+    }
+
+    async function apiCall(action, data = {}) {
+      const response = await fetch(WEB_APP_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action, ...data })
+      });
+      const text = await response.text();
+      let parsed;
+      try {
+        parsed = JSON.parse(text);
+      } catch (err) {
+        throw new Error('หลังบ้านตอบกลับผิดปกติ');
+      }
+      if (parsed.status === 'error') {
+        throw new Error(parsed.message || 'บันทึกไม่สำเร็จ');
+      }
+      return parsed;
+    }
+
+    function parseAmount(value) {
+      const num = Number(String(value || '').replace(/,/g, ''));
+      return Number.isFinite(num) ? num : 0;
+    }
+
+    function formatMoney(value) {
+      return Number(value || 0).toLocaleString('th-TH', { maximumFractionDigits: 2 });
+    }
+
+    function renderCategoryOptions() {
+      const datalist = document.getElementById('categoryOptions');
+      datalist.innerHTML = categories.map(category => `<option value="${escapeHtml(category)}"></option>`).join('');
+      document.getElementById('categoryCount').textContent = categories.length.toLocaleString('th-TH');
+    }
+
+    function escapeHtml(value) {
+      return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function inputValue(value) {
+      return value === 0 ? '0' : (value || '');
+    }
+
+    function addExpenseRow(row = {}) {
+      const list = document.getElementById('expenseList');
+      const wrapper = document.createElement('div');
+      wrapper.className = 'expense-row';
+      wrapper.innerHTML = `
+        <input class="input item" type="text" placeholder="รายการ" value="${escapeHtml(inputValue(row.item))}" oninput="updateSummary()">
+        <input class="input quantity" type="number" step="0.01" inputmode="decimal" placeholder="จำนวน" value="${escapeHtml(inputValue(row.quantity))}" oninput="updateSummary()">
+        <input class="input amount" type="number" step="0.01" inputmode="decimal" placeholder="ยอดเงิน" value="${escapeHtml(inputValue(row.amount))}" oninput="updateSummary()">
+        <input class="input category" list="categoryOptions" type="text" placeholder="ประเภท" value="${escapeHtml(inputValue(row.category))}" oninput="updateSummary()">
+        <button class="delete-btn" type="button" aria-label="ลบรายการ" onclick="removeExpenseRow(this)">ลบ</button>
+      `;
+      list.appendChild(wrapper);
+      updateSummary();
+    }
+
+    function removeExpenseRow(button) {
+      button.closest('.expense-row').remove();
+      if (!document.querySelector('.expense-row')) addExpenseRow();
+      updateSummary();
+    }
+
+    function collectRows() {
+      return Array.from(document.querySelectorAll('.expense-row')).map(row => ({
+        item: row.querySelector('.item').value.trim(),
+        quantity: row.querySelector('.quantity').value.trim(),
+        amount: row.querySelector('.amount').value.trim(),
+        category: row.querySelector('.category').value.trim()
+      })).filter(row => row.item || row.quantity || row.amount || row.category);
+    }
+
+    function updateSummary() {
+      const rows = collectRows();
+      const total = rows.reduce((sum, row) => sum + parseAmount(row.amount), 0);
+      document.getElementById('rowCount').textContent = rows.length.toLocaleString('th-TH');
+      document.getElementById('totalAmount').textContent = formatMoney(total);
+    }
+
+    function clearRows() {
+      if (!confirm('ล้างข้อมูลบนหน้าจอใช่ไหม? ถ้ากดบันทึกหลังจากล้าง จะลบข้อมูลของวันที่นี้ในชีทด้วย')) return;
+      document.getElementById('expenseList').innerHTML = '';
+      addExpenseRow();
+      setMessage('ล้างข้อมูลบนหน้าจอแล้ว', 'warn');
+    }
+
+    function validateRows(rows) {
+      for (let i = 0; i < rows.length; i += 1) {
+        const row = rows[i];
+        if (!row.item) return `แถวที่ ${i + 1}: กรุณากรอกรายการ`;
+        if (!row.amount) return `แถวที่ ${i + 1}: กรุณากรอกยอดเงิน`;
+        if (!row.category) return `แถวที่ ${i + 1}: กรุณากรอกประเภท`;
+      }
+      return '';
+    }
+
+    async function refreshCategories() {
+      setSaveState('กำลังอัปเดต');
+      setMessage('');
+      try {
+        const result = await apiCall('otherExpenseGetCategories');
+        categories = result.categories || [];
+        renderCategoryOptions();
+        setSaveState('พร้อมใช้งาน');
+        setMessage('อัปเดตหมวดหมู่แล้ว', 'success');
+      } catch (err) {
+        setSaveState('มีข้อผิดพลาด');
+        setMessage(err.message, 'error');
+      }
+    }
+
+    async function addCategory() {
+      const input = document.getElementById('newCategoryInput');
+      const category = input.value.trim();
+      if (!category) {
+        setMessage('กรุณาพิมพ์ประเภทก่อนเพิ่ม', 'warn');
+        input.focus();
+        return;
+      }
+
+      setSaveState('กำลังเพิ่มประเภท');
+      try {
+        const result = await apiCall('otherExpenseAddCategory', { category });
+        categories = result.categories || [];
+        renderCategoryOptions();
+        input.value = '';
+        setSaveState('พร้อมใช้งาน');
+        setMessage(`เพิ่มประเภท "${result.category}" แล้ว`, 'success');
+      } catch (err) {
+        setSaveState('มีข้อผิดพลาด');
+        setMessage(err.message, 'error');
+      }
+    }
+
+    async function loadDateData() {
+      const date = document.getElementById('expenseDate').value;
+      if (!date) return;
+
+      setSaveState('กำลังโหลด');
+      setMessage('');
+      try {
+        const result = await apiCall('otherExpenseLoadDate', { date });
+        if (result.categories) {
+          categories = result.categories;
+          renderCategoryOptions();
+        }
+        document.getElementById('expenseList').innerHTML = '';
+        const rows = result.rows || [];
+        if (rows.length) {
+          rows.forEach(addExpenseRow);
+          setMessage(`โหลดข้อมูลวันที่เลือกแล้ว ${rows.length} รายการ`, 'success');
+        } else {
+          addExpenseRow();
+          setMessage('ยังไม่มีข้อมูลของวันที่เลือก', '');
+        }
+        setSaveState('พร้อมใช้งาน');
+      } catch (err) {
+        document.getElementById('expenseList').innerHTML = '';
+        addExpenseRow();
+        setSaveState('มีข้อผิดพลาด');
+        setMessage(err.message, 'error');
+      }
+    }
+
+    async function saveData() {
+      const date = document.getElementById('expenseDate').value;
+      const rows = collectRows();
+      if (!date) {
+        setMessage('กรุณาเลือกวันที่', 'warn');
+        return;
+      }
+
+      const validationError = validateRows(rows);
+      if (validationError) {
+        setMessage(validationError, 'warn');
+        return;
+      }
+
+      if (rows.length === 0 && !confirm('ไม่มีรายการในวันนี้ ต้องการบันทึกเพื่อลบข้อมูลวันเดียวกันในชีทใช่ไหม?')) return;
+
+      setSaveState('กำลังบันทึก');
+      setMessage('');
+      try {
+        const result = await apiCall('otherExpenseSubmitDate', { date, rows });
+        setSaveState('บันทึกแล้ว');
+        setMessage(`บันทึกสำเร็จ ${result.rows || 0} รายการ`, 'success');
+      } catch (err) {
+        setSaveState('มีข้อผิดพลาด');
+        setMessage(err.message, 'error');
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      document.getElementById('expenseDate').value = todayKey();
+      document.getElementById('newCategoryInput').addEventListener('keydown', event => {
+        if (event.key === 'Enter') addCategory();
+      });
+      await refreshCategories();
+      await loadDateData();
+    });
+  </script>
+</body>
+</html>

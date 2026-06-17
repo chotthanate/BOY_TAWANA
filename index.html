@@ -239,6 +239,7 @@
           <input id="dbBaseUnit" type="text" placeholder="หน่วยฐาน เช่น ขวด">
           <input id="dbPrimaryUnit" type="text" placeholder="หน่วยหลัก เช่น ลัง">
           <input id="dbConversionRate" type="number" min="1" step="1" inputmode="numeric" placeholder="1 หน่วยหลัก = กี่หน่วยฐาน">
+          <input id="dbUnitDetail" class="full" type="text" placeholder="รายละเอียดหน่วย เช่น 1 แถว = 50 ใบ">
           <div class="db-checks full">
             <label><input id="dbUseStock" type="checkbox"> ใช้กับสต็อก</label>
             <label><input id="dbActive" type="checkbox" checked> เปิดใช้งาน</label>
@@ -392,6 +393,7 @@
       document.getElementById('dbBaseUnit').value = '';
       document.getElementById('dbPrimaryUnit').value = '';
       document.getElementById('dbConversionRate').value = '';
+      document.getElementById('dbUnitDetail').value = '';
       document.getElementById('dbUseStock').checked = false;
       document.getElementById('dbActive').checked = true;
       document.getElementById('dbName').focus();
@@ -407,6 +409,7 @@
       document.getElementById('dbBaseUnit').value = row.baseUnit || row.unit || '';
       document.getElementById('dbPrimaryUnit').value = row.primaryUnit || '';
       document.getElementById('dbConversionRate').value = row.conversionRate || '';
+      document.getElementById('dbUnitDetail').value = row.unitDetail || '';
       document.getElementById('dbUseStock').checked = !!row.useStock;
       document.getElementById('dbActive').checked = row.active !== false;
       document.getElementById('dbName').focus();
@@ -431,7 +434,7 @@
       var query = (document.getElementById('dbSearch').value || '').trim().toLowerCase();
       var rows = databaseRows.filter(function(row) {
         if (!query) return true;
-        return [row.name, row.mainType, row.subType, row.baseUnit, row.primaryUnit].join(' ').toLowerCase().indexOf(query) > -1;
+        return [row.name, row.mainType, row.subType, row.baseUnit, row.primaryUnit, row.unitDetail].join(' ').toLowerCase().indexOf(query) > -1;
       });
       if (rows.length === 0) {
         list.innerHTML = '<div class="saved-leave-empty">ไม่พบรายการ</div>';
@@ -441,12 +444,13 @@
         var unitText = row.primaryUnit
           ? (row.primaryUnit + ' = ' + (row.conversionRate || 1) + ' ' + (row.baseUnit || row.unit || ''))
           : (row.baseUnit || row.unit || '-');
+        var detailText = row.unitDetail ? (' · ' + row.unitDetail) : '';
         return `
           <div class="db-row ${row.active === false ? 'inactive' : ''}">
             <input type="checkbox" class="db-sync-check" value="${escapeHtml(row.rowNumber)}" ${row.useStock && row.active !== false ? '' : 'disabled'}>
             <div>
               <div class="name">${escapeHtml(row.name)}</div>
-              <div class="meta">${escapeHtml(row.mainType || '-')} / ${escapeHtml(row.subType || '-')} · ${escapeHtml(unitText)} · ${row.useStock ? 'ใช้กับสต็อก' : 'ไม่เข้าสต็อก'}${row.active === false ? ' · ปิดใช้งาน' : ''}</div>
+              <div class="meta">${escapeHtml(row.mainType || '-')} / ${escapeHtml(row.subType || '-')} · ${escapeHtml(unitText)}${escapeHtml(detailText)} · ${row.useStock ? 'ใช้กับสต็อก' : 'ไม่เข้าสต็อก'}${row.active === false ? ' · ปิดใช้งาน' : ''}</div>
             </div>
             <div class="db-actions">
               <button class="mini-btn mini-secondary" type="button" onclick="fillDatabaseForm('${escapeHtml(row.rowNumber)}')">แก้</button>
@@ -466,6 +470,7 @@
         baseUnit: document.getElementById('dbBaseUnit').value.trim(),
         primaryUnit: document.getElementById('dbPrimaryUnit').value.trim(),
         conversionRate: document.getElementById('dbConversionRate').value || 1,
+        unitDetail: document.getElementById('dbUnitDetail').value.trim(),
         useStock: document.getElementById('dbUseStock').checked,
         active: document.getElementById('dbActive').checked
       };
@@ -897,6 +902,7 @@
         baseUnit: baseUnit || cleanUnit,
         primaryUnit: primaryUnit,
         conversionRate: conversionRate,
+        unitDetail: String(source.unitDetail || '').trim(),
         unitOptions: unitOptions,
         useStock: source.useStock === true || String(source.useStock || '').toUpperCase() === 'TRUE',
         active: source.active !== false && String(source.active || 'TRUE').toUpperCase() !== 'FALSE'
@@ -940,10 +946,10 @@
       var meta = getExpenseMeta(itemInput.value, unitInput.value);
       if (hint) {
         if (meta.useStock && meta.primaryUnit && meta.baseUnit && meta.conversionRate > 1) {
-          hint.textContent = 'สต็อก: 1 ' + meta.primaryUnit + ' = ' + meta.conversionRate + ' ' + meta.baseUnit;
+          hint.textContent = 'สต็อก: 1 ' + meta.primaryUnit + ' = ' + meta.conversionRate + ' ' + meta.baseUnit + (meta.unitDetail ? ' · ' + meta.unitDetail : '');
           hint.classList.add('active');
         } else if (meta.useStock && meta.baseUnit) {
-          hint.textContent = 'สต็อก: คิดเป็นหน่วยฐาน ' + meta.baseUnit;
+          hint.textContent = 'สต็อก: คิดเป็นหน่วยฐาน ' + meta.baseUnit + (meta.unitDetail ? ' · ' + meta.unitDetail : '');
           hint.classList.add('active');
         } else {
           hint.textContent = '';

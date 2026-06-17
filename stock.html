@@ -199,6 +199,7 @@
         <div class="field"><label for="itemPrimaryUnit">หน่วยหลัก</label><input id="itemPrimaryUnit" placeholder="ลัง"></div>
         <div class="field"><label for="itemSubUnit">หน่วยย่อย</label><input id="itemSubUnit" placeholder="แถว"></div>
         <div class="field"><label for="itemConversion">1 หน่วยหลัก = กี่หน่วยย่อย</label><input id="itemConversion" type="number" min="1" step="1" inputmode="numeric" placeholder="20"></div>
+        <div class="field wide"><label for="itemUnitDetail">รายละเอียดหน่วย</label><input id="itemUnitDetail" placeholder="เช่น 1 แถว = 50 ใบ"></div>
         <div class="field"><label for="itemMinimum">ขั้นต่ำแจ้งเตือน</label><input id="itemMinimum" type="number" min="0" step="0.01" inputmode="decimal" placeholder="0"></div>
         <label class="toggle"><input id="itemAutoStock" type="checkbox" checked>เข้าสต็อกจากค่าใช้จ่ายอัตโนมัติ</label>
       </div>
@@ -382,6 +383,7 @@
         primaryUnit,
         subUnit: item.subUnit || item.secondaryUnit || '',
         conversionRate,
+        unitDetail: item.unitDetail || item.unitNote || item.detail || '',
         minimum: numberValue(item.minimum || item.min || 0),
         autoStock: item.autoStock !== false && item.autoStock !== 'FALSE' && item.autoStock !== 'ปิด',
         active: item.active !== false && item.active !== 'FALSE' && item.active !== 'ปิด'
@@ -538,7 +540,7 @@
           <div class="item-row">
             <div>
               <div class="name">${escapeHtml(item.name)} ${item.low ? '<span class="badge low">ใกล้หมด</span>' : ''} <span class="badge">${escapeHtml(item.category)}</span> ${item.autoStock ? '<span class="badge">Auto</span>' : '<span class="badge off">ไม่ Auto</span>'}</div>
-              <div class="meta">ชื่อเรียกอื่น: ${escapeHtml(item.aliases || '-')} · ขั้นต่ำ ${formatBalance(item, item.minimum)} · หน่วย ${escapeHtml(item.primaryUnit || '-')} ${item.subUnit ? '/ ' + escapeHtml(item.subUnit) : ''}</div>
+              <div class="meta">ชื่อเรียกอื่น: ${escapeHtml(item.aliases || '-')} · ขั้นต่ำ ${formatBalance(item, item.minimum)} · หน่วย ${escapeHtml(item.primaryUnit || '-')} ${item.subUnit ? '/ ' + escapeHtml(item.subUnit) : ''}${item.unitDetail ? ' · ' + escapeHtml(item.unitDetail) : ''}</div>
             </div>
             <div class="qty ${item.low ? 'low' : ''}">${escapeHtml(formatBalance(item, item.balance))}</div>
           </div>
@@ -574,6 +576,7 @@
       document.getElementById('itemPrimaryUnit').value = item ? item.primaryUnit : '';
       document.getElementById('itemSubUnit').value = item ? item.subUnit : '';
       document.getElementById('itemConversion').value = item ? item.conversionRate : '';
+      document.getElementById('itemUnitDetail').value = item ? (item.unitDetail || '') : '';
       document.getElementById('itemMinimum').value = item ? item.minimum : '';
       document.getElementById('itemAutoStock').checked = item ? item.autoStock !== false : true;
       document.getElementById('itemModal').classList.remove('hidden');
@@ -589,6 +592,7 @@
         primaryUnit: document.getElementById('itemPrimaryUnit').value.trim(),
         subUnit: document.getElementById('itemSubUnit').value.trim(),
         conversionRate: document.getElementById('itemConversion').value || 1,
+        unitDetail: document.getElementById('itemUnitDetail').value.trim(),
         minimum: document.getElementById('itemMinimum').value || 0,
         autoStock: document.getElementById('itemAutoStock').checked,
         active: true
@@ -625,7 +629,7 @@
       target.innerHTML = items.map(item => `
         <button class="product-tile" type="button" onclick="${clickFnName}('${encodeURIComponent(item.name)}')">
           <strong>${escapeHtml(item.name)}</strong>
-          <span class="meta">${escapeHtml(item.category)} · เหลือ ${escapeHtml(formatBalance(item, item.balance))}</span>
+          <span class="meta">${escapeHtml(item.category)} · เหลือ ${escapeHtml(formatBalance(item, item.balance))}${item.unitDetail ? ' · ' + escapeHtml(item.unitDetail) : ''}</span>
         </button>
       `).join('') || '<div class="empty">ไม่พบสินค้า</div>';
     }
@@ -658,7 +662,7 @@
       operationItem = getAllItems().find(item => item.name === decodeURIComponent(itemName));
       if (!operationItem) return;
       document.getElementById('selectedOperationName').textContent = operationItem.name;
-      document.getElementById('selectedOperationMeta').textContent = `เหลือ ${formatBalance(operationItem, operationItem.balance)}`;
+      document.getElementById('selectedOperationMeta').textContent = `เหลือ ${formatBalance(operationItem, operationItem.balance)}${operationItem.unitDetail ? ' · ' + operationItem.unitDetail : ''}`;
       document.getElementById('operationUnit').innerHTML = itemUnits(operationItem).map(unit => `<option value="${escapeHtml(unit)}">${escapeHtml(unit)}</option>`).join('');
       document.getElementById('operationQty').focus();
     }
@@ -795,7 +799,7 @@
       if (!rows.length) return alert('ยังไม่มีรายการเบิก');
       document.getElementById('summaryList').innerHTML = rows.map(row => `
         <div class="item-card item-row">
-          <div><div class="name">${escapeHtml(row.item.name)}</div><div class="meta">คงเหลือก่อนเบิก ${escapeHtml(formatBalance(row.item, row.item.balance))}</div></div>
+          <div><div class="name">${escapeHtml(row.item.name)}</div><div class="meta">คงเหลือก่อนเบิก ${escapeHtml(formatBalance(row.item, row.item.balance))}${row.item.unitDetail ? ' · ' + escapeHtml(row.item.unitDetail) : ''}</div></div>
           <div class="qty">${escapeHtml(formatNumber(row.qty))} ${escapeHtml(row.unit)}</div>
         </div>
       `).join('');
